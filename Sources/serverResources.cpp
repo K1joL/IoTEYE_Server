@@ -16,6 +16,7 @@ std::shared_ptr<http_response> pins_resource::render_POST(const http_request &re
 
     cmd = req.get_arg("cmd");
     if(func::GetCommandCode(cmd) != ioteyeServer::CREATE_PIN)
+        return std::shared_ptr<http_response>(new string_response("Pin not created!", 404));
     userID = req.get_arg("userID");
     pinNumber = std::stoi(req.get_arg("pinNumber"));
     dataType = req.get_arg("dataType");
