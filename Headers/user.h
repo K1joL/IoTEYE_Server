@@ -19,10 +19,9 @@ namespace ioteyeUser
                 this->m_userID = userID;
             }
             int addPin(uint8_t pinNumber, const std::string& dataType, const std::string& defaultData);
-            template<typename T>
-            int changePin(uint8_t pinNumber, const T& data);
+            int changePin(uint8_t pinNumber, const std::string& data);
             int removePin(uint8_t pinNumber);
-
+            std::string getPin(uint8_t pinNumber);
         private:
             std::string m_userID;
             size_t m_pinsCounter = 0;

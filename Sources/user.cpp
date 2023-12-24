@@ -41,8 +41,7 @@ int ioteyeUser::User::addPin(uint8_t pinNumber, const std::string& dataType,
     return 0;
 }
 
-template<typename T>
-int ioteyeUser::User::changePin(uint8_t pinNumber, const T& data)
+int ioteyeUser::User::changePin(uint8_t pinNumber, const std::string& data)
 {
     if(m_pinsType.find(pinNumber) == m_pinsType.end())
         return 1;
@@ -50,13 +49,13 @@ int ioteyeUser::User::changePin(uint8_t pinNumber, const T& data)
     switch(m_pinsType.at(pinNumber))
     {
     case INTID:
-        m_intPins.at(pinNumber) = static_cast<int>(data);
+        m_intPins.at(pinNumber) = std::stoi(data);
         break;
     case DOUBLEID:
-        m_doublePins.at(pinNumber) = static_cast<double>(data);
+        m_doublePins.at(pinNumber) = std::stod(data);
         break;
     case STRINGID:
-        m_stringPins.at(pinNumber) = static_cast<std::string>(data);
+        m_stringPins.at(pinNumber) = data;
         break;
     default:
         // Invalid data type
@@ -89,4 +88,23 @@ int ioteyeUser::User::removePin(uint8_t pinNumber)
     m_pinsCounter--;
     
     return 0;
+}
+
+std::string ioteyeUser::User::getPin(uint8_t pinNumber)
+{
+    if(m_pinsType.find(pinNumber) == m_pinsType.end())
+        return std::string{""};
+    
+    switch(m_pinsType.at(pinNumber))
+    {
+    case INTID:
+        return std::to_string(m_intPins.at(pinNumber));
+    case DOUBLEID:
+        return std::to_string(m_doublePins.at(pinNumber));
+    case STRINGID:
+        return m_stringPins.at(pinNumber);
+    default:
+        // Invalid data type
+        return std::string{""};
+    }
 }

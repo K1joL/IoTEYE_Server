@@ -13,13 +13,11 @@ using namespace httpserver;
 using std::cout;
 using std::endl;
 
-
-
 int main(int argc, char **argv)
 {
     webserver ws = create_webserver(8081);
     pins_resource pins;
-    ws.register_resource("/IoTEYE_PINS", &pins);
+    ws.register_resource("/user/userID/pins", &pins);
     ws.start(0);
     char key;
     while(true)

@@ -29,12 +29,22 @@ namespace ioteyeServer
     };
 }
 
+static std::unordered_map<std::string, ioteyeUser::User*> userPins;
+
 class pins_resource : public http_resource
 {
     public:
         std::shared_ptr<http_response> render_POST(const http_request& req);
-        std::shared_ptr<http_response> render_GET(const http_request &req);
+        // std::shared_ptr<http_response> render_GET(const http_request &req);
+        std::shared_ptr<http_response> render_PUT(const http_request& req);
+        std::shared_ptr<http_response> render_DELETE(const http_request &req);
+};
 
+class user_resource : public http_request
+{
+    public:
+        std::shared_ptr<http_response> render_POST(const http_request& req);
+        std::shared_ptr<http_response> render_GET(const http_request &req);
 };
 
 #endif //SERVER_RESOURCES_H
