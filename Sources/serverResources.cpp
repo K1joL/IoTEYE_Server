@@ -133,7 +133,7 @@ std::shared_ptr<http_response> user_resource::render_POST(const http_request &re
         uint64_t newId = 0;
         do
         {
-            newId = ioteyeUser::User::getID();
+            newId = ioteyeUser::User::getNextID();
             cout << "newId " << newId << endl;
 
         } while (userPins.find(std::to_string(newId)) != userPins.end());

@@ -112,7 +112,7 @@ std::string ioteyeUser::User::getPin(uint8_t pinNumber)
     }
 }
 
-uint64_t ioteyeUser::User::getID()
+uint64_t ioteyeUser::User::getNextID()
 {
     if(m_idSequence < UINT64_MAX)
         return m_idSequence++;
