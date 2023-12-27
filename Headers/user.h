@@ -22,9 +22,11 @@ namespace ioteyeUser
             int changePin(uint8_t pinNumber, const std::string& data);
             int removePin(uint8_t pinNumber);
             std::string getPin(uint8_t pinNumber);
+            static uint64_t getID();
         private:
             std::string m_userID;
             size_t m_pinsCounter = 0;
+            static uint64_t m_idSequence;
 
         enum ContainerID
         {

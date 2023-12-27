@@ -1,5 +1,7 @@
 #include "user.h" 
 
+uint64_t ioteyeUser::User::m_idSequence = 0;
+
 int ioteyeUser::User::addPin(uint8_t pinNumber, const std::string& dataType, 
     const std::string& defaultData)
 {
@@ -108,4 +110,11 @@ std::string ioteyeUser::User::getPin(uint8_t pinNumber)
         // Invalid data type
         return std::string{""};
     }
+}
+
+uint64_t ioteyeUser::User::getID()
+{
+    if(m_idSequence < UINT64_MAX)
+        return m_idSequence++;
+    else return 0;
 }
