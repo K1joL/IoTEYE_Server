@@ -85,6 +85,7 @@ int ioteyeUser::User::removePin(uint8_t pinNumber)
         // Invalid data type
         return 4;
     }
+    m_pinsType.erase(m_pinsType.find(pinNumber), ++m_pinsType.find(pinNumber));
     m_pinsCounter--;
     
     return 0;

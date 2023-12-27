@@ -17,7 +17,9 @@ int main(int argc, char **argv)
 {
     webserver ws = create_webserver(8081);
     pins_resource pins;
-    ws.register_resource("/user/userID/pins", &pins);
+    user_resource user;
+    ws.register_resource("/user/{userID}/pins", &pins); 
+    ws.register_resource("/user", &user);
     ws.start(0);
     char key;
     while(true)
