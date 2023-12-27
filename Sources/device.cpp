@@ -90,9 +90,9 @@ bool ioteyeDevice::Device::StateTimer::isStopped()
 
 uint64_t ioteyeDevice::Device::m_idSequence = 1;
 
-ioteyeDevice::Device::Device(uint64_t id)
+ioteyeDevice::Device::Device()
 {
-    m_id = id;
+    m_id = m_idSequence;
     m_idSequence++;
     m_timerMutex = new std::mutex();
 }

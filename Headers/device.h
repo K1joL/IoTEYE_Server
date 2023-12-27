@@ -32,7 +32,8 @@ namespace ioteyeDevice
         };
 
     public:
-        Device(uint64_t id);
+        Device();
+        uint64_t getID() { return m_id; }
         uint8_t getState();
         void changeState(uint8_t state);
         void ping() { m_stateTimer.ping(); };
