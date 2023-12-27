@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <iostream>
+#include "device.h"
 
 using std::cout;
 using std::endl;
@@ -24,6 +25,13 @@ namespace ioteyeUser
             std::string getPin(uint8_t pinNumber);
             std::string getID() { return m_userID; }
             static uint64_t getNextID();
+            int addDevice(uint64_t devID, ioteyeDevice::Device* device);
+            void pingDevice(uint64_t devID);
+            //returns:
+            //0 - if device is online
+            //1 - if device is offline 
+            //2 - if information is out of date
+            uint8_t getDeviceStatus(uint64_t devID);
         private:
             std::string m_userID;
             size_t m_pinsCounter = 0;
@@ -40,6 +48,8 @@ namespace ioteyeUser
             std::unordered_map<uint8_t, int> m_intPins;
             std::unordered_map<uint8_t, double> m_doublePins;
             std::unordered_map<uint8_t, std::string> m_stringPins;
+        //Devices data
+            std::unordered_map<uint64_t, ioteyeDevice::Device*> m_devices;
     };
 }
 

@@ -118,3 +118,24 @@ uint64_t ioteyeUser::User::getNextID()
         return m_idSequence++;
     else return 0;
 }
+
+int ioteyeUser::User::addDevice(uint64_t devID, ioteyeDevice::Device *device)
+{
+    m_devices.emplace(devID, device);
+    return 0;
+}
+
+void ioteyeUser::User::pingDevice(uint64_t devID)
+{
+    auto device = m_devices.find(devID);
+    if(device != m_devices.end())
+        return device->second->ping();
+}
+
+uint8_t ioteyeUser::User::getDeviceStatus(uint64_t devID)
+{
+    auto device = m_devices.find(devID);
+    if(device != m_devices.end())
+        return device->second->getState();
+    return ioteyeDevice::Device::MAX_STATES;
+}

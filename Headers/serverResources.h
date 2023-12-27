@@ -22,10 +22,11 @@ namespace ioteyeServer
         REGISTER_DEVICE = 'r' + 'd',
         CREATE_PIN = 'c' + 'p',
         DEVICE_STATUS = 'd' + 's',
+        DEVICE_STATUS_UPDATE = 'u' + 's',
         UPDATE_PIN = 'u' + 'p',
         DELETE_PIN = 'd' + 'p',
         GET_PIN = 'p' + 'v',
-        COMMANDS_MAX = 8
+        COMMANDS_MAX = 9
     };
 }
 

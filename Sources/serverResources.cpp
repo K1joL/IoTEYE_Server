@@ -126,7 +126,7 @@ std::shared_ptr<http_response> user_resource::render_POST(const http_request &re
     if(userID != "")
         if(s_userPins.find(userID) == s_userPins.end())
             s_userPins.emplace(userID, new ioteyeUser::User{userID});
-        else std::shared_ptr<http_response>(new string_response("This ID already exists!", 400));
+        else return std::shared_ptr<http_response>(new string_response("This ID already exists!", 400));
     else
     {
         // find unoccupied ID
@@ -153,12 +153,60 @@ std::shared_ptr<http_response> user_resource::render_GET(const http_request &req
 
 std::shared_ptr<http_response> device_resource::render_POST(const http_request &req)
 {
+    std::cout << "Device POST" << std::endl;
+    std::string cmd = req.get_arg("cmd");
+    if(func::GetCommandCode(cmd) != ioteyeServer::REGISTER_DEVICE)
+        return std::shared_ptr<http_response>(new string_response("Wrong command!", 400));
     
-    return std::shared_ptr<http_response>();
+    std::string userID = req.get_arg("userID");
+    auto user = s_userPins.find(userID);
+    
+    if(user == s_userPins.end())
+        return std::shared_ptr<http_response>(new string_response("User does not exists!", 400));
+    
+    ioteyeDevice::Device *newDevice = new ioteyeDevice::Device();
+    
+    if(!user->second->addDevice(newDevice->getID(), newDevice))
+        s_userDevices.emplace(newDevice->getID(), user->second);
+    else return std::shared_ptr<http_response>(new string_response("Something went wrong!", 500));
+
+    return std::shared_ptr<http_response>(new string_response("devID=" + std::to_string(newDevice->getID()), 201));
 }
 
 std::shared_ptr<http_response> device_resource::render_GET(const http_request &req)
 {
-
-    return std::shared_ptr<http_response>();
+    std::cout << "Device GET" << std::endl;
+    
+    uint8_t cmd = func::GetCommandCode(req.get_arg("cmd"));
+    uint64_t devID = std::stoul(req.get_arg("devID"));
+    std::string userID = req.get_arg("userID");
+    uint8_t deviceStatus = 0;
+    auto device = s_userDevices.find(devID);
+    switch (cmd)
+    {
+    case ioteyeServer::DEVICE_STATUS:
+        if (device != s_userDevices.end())
+        {
+            if (device->second->getID() == userID)
+            {
+                deviceStatus = device->second->getDeviceStatus(devID);
+            }
+            else
+                return std::shared_ptr<http_response>(new string_response("This user doesnt have this device!", 403));
+        }
+        return std::shared_ptr<http_response>(new string_response("devStatus=" + std::to_string(deviceStatus), 200));
+        break;
+    case ioteyeServer::DEVICE_STATUS_UPDATE:
+        if (device != s_userDevices.end())
+        {
+            if (device->second->getID() == userID)
+                device->second->pingDevice(devID);
+            else
+                return std::shared_ptr<http_response>(new string_response("This user doesnt have this device!", 403));
+        }
+        return std::shared_ptr<http_response>(new string_response("Device status updated!", 200));
+        break;
+    default:
+        return std::shared_ptr<http_response>(new string_response("Wrong command!", 400));
+    }
 }
