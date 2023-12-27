@@ -18,6 +18,8 @@ int main(int argc, char **argv)
     webserver ws = create_webserver(8081);
     pins_resource pins;
     user_resource user;
+    // For next updates
+    // ws.register_resource("/user/{userID}/pins/{pinNumber}/{cmd}", &pins); 
     ws.register_resource("/user/{userID}/pins", &pins); 
     ws.register_resource("/user", &user);
     ws.start(0);
