@@ -150,3 +150,15 @@ std::shared_ptr<http_response> user_resource::render_GET(const http_request &req
 {
     return std::shared_ptr<http_response>();
 }
+
+std::shared_ptr<http_response> device_resource::render_POST(const http_request &req)
+{
+    
+    return std::shared_ptr<http_response>();
+}
+
+std::shared_ptr<http_response> device_resource::render_GET(const http_request &req)
+{
+
+    return std::shared_ptr<http_response>();
+}
