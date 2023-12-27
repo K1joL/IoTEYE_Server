@@ -13,7 +13,7 @@ std::shared_ptr<http_response> pins_resource::render_POST(const http_request &re
     std::string value{};
     std::string cmd{};
     std::string content = "PinValue=";
-    auto user = userPins.begin();
+    auto user = s_userPins.begin();
 
     //command check
     cmd = req.get_arg("cmd");
@@ -32,8 +32,8 @@ std::shared_ptr<http_response> pins_resource::render_POST(const http_request &re
         //     userPins.emplace(userID, new ioteyeUser::User{userID});
 
         // existence checks
-        user = userPins.find(userID);
-        if (user != userPins.end())
+        user = s_userPins.find(userID);
+        if (user != s_userPins.end())
             if ((user->second->addPin(pinNumber, dataType, value)) == 0)
                 return std::shared_ptr<http_response>(new string_response("Pin created!", 201));
             else
@@ -48,8 +48,8 @@ std::shared_ptr<http_response> pins_resource::render_POST(const http_request &re
         pinNumber = std::stoi(req.get_arg("pinNumber"));
 
         // existence checks
-        user = userPins.find(userID);
-        if (user != userPins.end())
+        user = s_userPins.find(userID);
+        if (user != s_userPins.end())
             if ((value = user->second->getPin(pinNumber)) != "")
             {
                 content += value;
@@ -82,8 +82,8 @@ std::shared_ptr<http_response> pins_resource::render_PUT(const http_request &req
     value = req.get_arg("value");
 
     //existence checks
-    auto user = userPins.find(userID);
-    if(user != userPins.end())
+    auto user = s_userPins.find(userID);
+    if(user != s_userPins.end())
         if((user->second->changePin(pinNumber, value)) == 0)
             return std::shared_ptr<http_response>(new string_response("Pin changed", 200));
         else 
@@ -107,8 +107,8 @@ std::shared_ptr<http_response> pins_resource::render_DELETE(const http_request &
     pinNumber = std::stoi(req.get_arg("pinNumber"));
 
     //existence checks
-    auto user = userPins.find(userID);
-    if(user != userPins.end())
+    auto user = s_userPins.find(userID);
+    if(user != s_userPins.end())
         if((user->second->removePin(pinNumber)) == 0)
             return std::shared_ptr<http_response>(new string_response("Pin deleted", 200));
         else 
@@ -124,8 +124,8 @@ std::shared_ptr<http_response> user_resource::render_POST(const http_request &re
     cout << "userid " << userID << endl;
 
     if(userID != "")
-        if(userPins.find(userID) == userPins.end())
-            userPins.emplace(userID, new ioteyeUser::User{userID});
+        if(s_userPins.find(userID) == s_userPins.end())
+            s_userPins.emplace(userID, new ioteyeUser::User{userID});
         else std::shared_ptr<http_response>(new string_response("This ID already exists!", 400));
     else
     {
@@ -136,9 +136,9 @@ std::shared_ptr<http_response> user_resource::render_POST(const http_request &re
             newId = ioteyeUser::User::getNextID();
             cout << "newId " << newId << endl;
 
-        } while (userPins.find(std::to_string(newId)) != userPins.end());
+        } while (s_userPins.find(std::to_string(newId)) != s_userPins.end());
         
-        userPins.emplace(std::to_string(newId), new ioteyeUser::User{std::to_string(newId)});
+        s_userPins.emplace(std::to_string(newId), new ioteyeUser::User{std::to_string(newId)});
         // using userID variable to return response
         userID = std::to_string(newId);
     }

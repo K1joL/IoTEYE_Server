@@ -29,7 +29,8 @@ namespace ioteyeServer
     };
 }
 
-static std::unordered_map<std::string, ioteyeUser::User*> userPins;
+static std::unordered_map<std::string, ioteyeUser::User*> s_userPins;
+static std::unordered_map<uint64_t, ioteyeUser::User*> s_userDevices;
 
 class pins_resource : public http_resource
 {
