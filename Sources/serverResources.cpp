@@ -15,9 +15,9 @@ std::shared_ptr<http_response> pins_resource::render_POST(const http_request &re
     std::string content = "PinValue=";
     auto user = s_userPins.begin();
 
-    //command check
+    // command check
     cmd = req.get_arg("cmd");
-    switch(func::GetCommandCode(cmd))
+    switch (func::GetCommandCode(cmd))
     {
     case ioteyeServer::CREATE_PIN:
         // Getting request arguments
@@ -42,27 +42,44 @@ std::shared_ptr<http_response> pins_resource::render_POST(const http_request &re
             return std::shared_ptr<http_response>(new string_response("User does not exists!", 400));
         break;
 
-    case ioteyeServer::GET_PIN:
-        // Getting request arguments
-        userID = req.get_arg("userID");
-        pinNumber = std::stoi(req.get_arg("pinNumber"));
-
-        // existence checks
-        user = s_userPins.find(userID);
-        if (user != s_userPins.end())
-            if ((value = user->second->getPin(pinNumber)) != "")
-            {
-                content += value;
-                return std::shared_ptr<http_response>(new string_response(content, 200));
-            }
-            else
-                return std::shared_ptr<http_response>(new string_response("Pin does not exists!", 400));
-        else
-            return std::shared_ptr<http_response>(new string_response("User does not exists!", 400));
-        break;
     default:
         return std::shared_ptr<http_response>(new string_response("Wrong command!", 400));
-    }    
+    }
+}
+
+std::shared_ptr<http_response> pins_resource::render_GET(const http_request &req)
+{
+    cout << "PINS GET" << endl;
+    uint8_t pinNumber = 0;
+    std::string userID{};
+    std::string value{};
+    std::string cmd{};
+    std::string content = "PinValue=";
+    auto user = s_userPins.begin();
+
+    // command check
+    cmd = req.get_arg("cmd");
+    if (func::GetCommandCode(cmd) != ioteyeServer::GET_PIN)
+        return std::shared_ptr<http_response>(new string_response("Wrong command!", 400));
+
+    // Getting request arguments
+    userID = req.get_arg("userID");
+    pinNumber = std::stoi(req.get_arg("pinNumber"));
+
+    // existence checks
+    user = s_userPins.find(userID);
+    if (user != s_userPins.end())
+        if ((value = user->second->getPin(pinNumber)) != "")
+        {
+            content += value;
+            return std::shared_ptr<http_response>(new string_response(content, 200));
+        }
+        else
+            return std::shared_ptr<http_response>(new string_response("Pin does not exists!", 400));
+    else
+        return std::shared_ptr<http_response>(new string_response("User does not exists!", 400));
+
+    return std::shared_ptr<http_response>();
 }
 
 std::shared_ptr<http_response> pins_resource::render_PUT(const http_request &req)
@@ -74,21 +91,21 @@ std::shared_ptr<http_response> pins_resource::render_PUT(const http_request &req
     std::string cmd{};
 
     cmd = req.get_arg("cmd");
-    if(func::GetCommandCode(cmd) != ioteyeServer::UPDATE_PIN)
+    if (func::GetCommandCode(cmd) != ioteyeServer::UPDATE_PIN)
         return std::shared_ptr<http_response>(new string_response("Wrong command!", 400));
-    //Getting request arguments
+    // Getting request arguments
     userID = req.get_arg("userID");
     pinNumber = std::stoi(req.get_arg("pinNumber"));
     value = req.get_arg("value");
 
-    //existence checks
+    // existence checks
     auto user = s_userPins.find(userID);
-    if(user != s_userPins.end())
-        if((user->second->changePin(pinNumber, value)) == 0)
+    if (user != s_userPins.end())
+        if ((user->second->changePin(pinNumber, value)) == 0)
             return std::shared_ptr<http_response>(new string_response("Pin changed", 200));
-        else 
+        else
             return std::shared_ptr<http_response>(new string_response("Pin does not exists!", 400));
-    else 
+    else
         return std::shared_ptr<http_response>(new string_response("User does not exists!", 400));
 }
 
@@ -100,20 +117,20 @@ std::shared_ptr<http_response> pins_resource::render_DELETE(const http_request &
     std::string cmd{};
 
     cmd = req.get_arg("cmd");
-    if(func::GetCommandCode(cmd) != ioteyeServer::DELETE_PIN)
+    if (func::GetCommandCode(cmd) != ioteyeServer::DELETE_PIN)
         return std::shared_ptr<http_response>(new string_response("Wrong command!", 400));
-    //Getting request arguments
+    // Getting request arguments
     userID = req.get_arg("userID");
     pinNumber = std::stoi(req.get_arg("pinNumber"));
 
-    //existence checks
+    // existence checks
     auto user = s_userPins.find(userID);
-    if(user != s_userPins.end())
-        if((user->second->removePin(pinNumber)) == 0)
+    if (user != s_userPins.end())
+        if ((user->second->removePin(pinNumber)) == 0)
             return std::shared_ptr<http_response>(new string_response("Pin deleted", 200));
-        else 
+        else
             return std::shared_ptr<http_response>(new string_response("Pin does not exists!", 400));
-    else 
+    else
         return std::shared_ptr<http_response>(new string_response("User does not exists!", 400));
 }
 
@@ -123,10 +140,11 @@ std::shared_ptr<http_response> user_resource::render_POST(const http_request &re
     std::string userID = req.get_arg("customID");
     cout << "userid " << userID << endl;
 
-    if(userID != "")
-        if(s_userPins.find(userID) == s_userPins.end())
+    if (userID != "")
+        if (s_userPins.find(userID) == s_userPins.end())
             s_userPins.emplace(userID, new ioteyeUser::User{userID});
-        else return std::shared_ptr<http_response>(new string_response("This ID already exists!", 400));
+        else
+            return std::shared_ptr<http_response>(new string_response("This ID already exists!", 400));
     else
     {
         // find unoccupied ID
@@ -137,7 +155,7 @@ std::shared_ptr<http_response> user_resource::render_POST(const http_request &re
             cout << "newId " << newId << endl;
 
         } while (s_userPins.find(std::to_string(newId)) != s_userPins.end());
-        
+
         s_userPins.emplace(std::to_string(newId), new ioteyeUser::User{std::to_string(newId)});
         // using userID variable to return response
         userID = std::to_string(newId);
@@ -155,20 +173,21 @@ std::shared_ptr<http_response> device_resource::render_POST(const http_request &
 {
     std::cout << "Device POST" << std::endl;
     std::string cmd = req.get_arg("cmd");
-    if(func::GetCommandCode(cmd) != ioteyeServer::REGISTER_DEVICE)
+    if (func::GetCommandCode(cmd) != ioteyeServer::REGISTER_DEVICE)
         return std::shared_ptr<http_response>(new string_response("Wrong command!", 400));
-    
+
     std::string userID = req.get_arg("userID");
     auto user = s_userPins.find(userID);
-    
-    if(user == s_userPins.end())
+
+    if (user == s_userPins.end())
         return std::shared_ptr<http_response>(new string_response("User does not exists!", 400));
-    
+
     ioteyeDevice::Device *newDevice = new ioteyeDevice::Device();
-    
-    if(!user->second->addDevice(newDevice->getID(), newDevice))
+
+    if (!user->second->addDevice(newDevice->getID(), newDevice))
         s_userDevices.emplace(newDevice->getID(), user->second);
-    else return std::shared_ptr<http_response>(new string_response("Something went wrong!", 500));
+    else
+        return std::shared_ptr<http_response>(new string_response("Something went wrong!", 500));
 
     return std::shared_ptr<http_response>(new string_response("devID=" + std::to_string(newDevice->getID()), 201));
 }
@@ -176,7 +195,7 @@ std::shared_ptr<http_response> device_resource::render_POST(const http_request &
 std::shared_ptr<http_response> device_resource::render_GET(const http_request &req)
 {
     std::cout << "Device GET" << std::endl;
-    
+
     uint8_t cmd = func::GetCommandCode(req.get_arg("cmd"));
     uint64_t devID = std::stoul(req.get_arg("devID"));
     std::string userID = req.get_arg("userID");

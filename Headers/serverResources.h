@@ -18,14 +18,14 @@ namespace ioteyeServer
     enum COMMANDS
     {
         NON_COMMAND = 0,
-        REGISTER_USER = 'r' + 'u',
-        REGISTER_DEVICE = 'r' + 'd',
-        CREATE_PIN = 'c' + 'p',
-        DEVICE_STATUS = 'd' + 's',
-        DEVICE_STATUS_UPDATE = 'u' + 's',
-        UPDATE_PIN = 'u' + 'p',
-        DELETE_PIN = 'd' + 'p',
-        GET_PIN = 'p' + 'v',
+        REGISTER_USER = 'r' + 'u',              //231
+        REGISTER_DEVICE = 'r' + 'd',            //214
+        CREATE_PIN = 'c' + 'p',                 //211
+        DEVICE_STATUS = 'd' + 's',              //215
+        DEVICE_STATUS_UPDATE = 'u' + 's',       //232
+        UPDATE_PIN = 'u' + 'p',                 //229
+        DELETE_PIN = 'd' + 'p',                 //212
+        GET_PIN = 'p' + 'v',                    //230
         COMMANDS_MAX = 9
     };
 }
@@ -37,7 +37,7 @@ class pins_resource : public http_resource
 {
     public:
         std::shared_ptr<http_response> render_POST(const http_request& req);
-        // std::shared_ptr<http_response> render_GET(const http_request &req);
+        std::shared_ptr<http_response> render_GET(const http_request &req);
         std::shared_ptr<http_response> render_PUT(const http_request& req);
         std::shared_ptr<http_response> render_DELETE(const http_request& req);
 };
