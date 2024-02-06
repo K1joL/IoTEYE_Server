@@ -6,8 +6,16 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -Wall")
 
 include_directories("Headers/")
 
-set(SRC_LIST Sources/functional.cpp Sources/user.cpp Sources/serverResources.cpp Sources/device.cpp)
-set(HEAD_LIST Headers/functional.h Headers/user.h Headers/serverResources.h Headers/device.h)
+set(SRC_LIST 
+	Sources/functional.cpp 
+	Sources/user.cpp 
+	Sources/serverResources.cpp 
+	Sources/device.cpp)
+set(HEAD_LIST 
+	Headers/functional.h 
+	Headers/user.h 
+	Headers/serverResources.h 
+	Headers/device.h)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PC_HTTPSERVER REQUIRED IMPORTED_TARGET
