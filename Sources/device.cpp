@@ -13,18 +13,15 @@ m_cbChangeState{callback}
             if(wasPing())
             {
                 setPingFalse();
-                std::cout << 1 << std::endl;
                 m_start = std::chrono::high_resolution_clock::now();
                 while (std::chrono::high_resolution_clock::now() - m_start < m_outdatedDelay)
                 {
-                    std::cout << 11 << std::endl;
                     std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     if (wasPing())
                         break;
                 }
                 if (wasPing())
                 {
-                    std::cout << 2 << std::endl;
                     m_cbChangeState(ioteyeDevice::Device::ONLINE);
                     setPingFalse();
                     continue;
@@ -34,21 +31,18 @@ m_cbChangeState{callback}
                 m_start = std::chrono::high_resolution_clock::now();
                 while (std::chrono::high_resolution_clock::now() - m_start < m_offlineDelay)
                 {
-                    std::cout << 3 << std::endl;
                     std::this_thread::sleep_for(std::chrono::milliseconds(1));
                     if (wasPing())
                         break;
                 }
                 if (wasPing())
                 {
-                    std::cout << 4 << std::endl;
                     m_cbChangeState(ioteyeDevice::Device::ONLINE);
                     setPingFalse();
                     continue;
                 }
                 // set state = offline
                 m_cbChangeState(ioteyeDevice::Device::OFFLINE);
-                std::cout << 5 << std::endl;
             }
             if(isStopped())
                 break;
