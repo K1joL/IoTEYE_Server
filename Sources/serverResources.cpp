@@ -1,12 +1,14 @@
 #include "serverResources.h"
 
+using namespace iotDebug;
+
 std::shared_ptr<http_response> pins_resource::render_POST(const http_request &req)
 {
     // for (auto &e : req.get_args())
     // {
-    //     std::cout << e.first << ": " << static_cast<std::string>(e.second) << std::endl;
+    //     std::debugMessage(e.first << ": " << static_cast<std::string>(e.second) << std::endl;
     // }
-    cout << "POST" << endl;
+    debugMessage("POST");
     uint8_t pinNumber = 0;
     std::string dataType{};
     std::string userID{};
@@ -49,7 +51,7 @@ std::shared_ptr<http_response> pins_resource::render_POST(const http_request &re
 
 std::shared_ptr<http_response> pins_resource::render_GET(const http_request &req)
 {
-    cout << "PINS GET" << endl;
+    debugMessage("PINS GET"); NEWLINE
     uint8_t pinNumber = 0;
     std::string userID{};
     std::string value{};
@@ -84,7 +86,7 @@ std::shared_ptr<http_response> pins_resource::render_GET(const http_request &req
 
 std::shared_ptr<http_response> pins_resource::render_PUT(const http_request &req)
 {
-    cout << "PUT" << endl;
+    debugMessage("PUT"); NEWLINE
     uint8_t pinNumber = 0;
     std::string userID{};
     std::string value{};
@@ -111,7 +113,7 @@ std::shared_ptr<http_response> pins_resource::render_PUT(const http_request &req
 
 std::shared_ptr<http_response> pins_resource::render_DELETE(const http_request &req)
 {
-    cout << "DELETE" << endl;
+    debugMessage("DELETE"); NEWLINE
     uint8_t pinNumber = 0;
     std::string userID{};
     std::string cmd{};
@@ -136,9 +138,9 @@ std::shared_ptr<http_response> pins_resource::render_DELETE(const http_request &
 
 std::shared_ptr<http_response> user_resource::render_POST(const http_request &req)
 {
-    cout << "user POST" << endl;
+    debugMessage("user POST"); NEWLINE
     std::string userID = req.get_arg("customID");
-    cout << "userid " << userID << endl;
+    debugMessage("userid " + userID); NEWLINE
 
     if (userID != "")
         if (s_userPins.find(userID) == s_userPins.end())
@@ -152,7 +154,7 @@ std::shared_ptr<http_response> user_resource::render_POST(const http_request &re
         do
         {
             newId = ioteyeUser::User::getNextID();
-            cout << "newId " << newId << endl;
+            debugMessage("newId " + newId); NEWLINE
 
         } while (s_userPins.find(std::to_string(newId)) != s_userPins.end());
 
@@ -171,7 +173,7 @@ std::shared_ptr<http_response> user_resource::render_GET(const http_request &req
 
 std::shared_ptr<http_response> device_resource::render_POST(const http_request &req)
 {
-    std::cout << "Device POST" << std::endl;
+    debugMessage("Device POST"); NEWLINE
     std::string cmd = req.get_arg("cmd");
     if (func::GetCommandCode(cmd) != ioteyeServer::REGISTER_DEVICE)
         return std::shared_ptr<http_response>(new string_response("Wrong command!", 400));
@@ -194,7 +196,7 @@ std::shared_ptr<http_response> device_resource::render_POST(const http_request &
 
 std::shared_ptr<http_response> device_resource::render_GET(const http_request &req)
 {
-    std::cout << "Device GET" << std::endl;
+    debugMessage("Device GET"); NEWLINE
 
     uint8_t cmd = func::GetCommandCode(req.get_arg("cmd"));
     uint64_t devID = std::stoul(req.get_arg("devID"));

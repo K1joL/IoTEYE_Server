@@ -2,8 +2,11 @@
 #define SERVER_RESOURCES_H
 
 #include <httpserver.hpp>
-#include <iostream>
 #include <unordered_map>
+
+#ifdef IoTeyeDEBUG
+#include <iostream>
+#endif // !IoTeyeDEBUG
 
 #include "functional.h"
 #include "user.h"
