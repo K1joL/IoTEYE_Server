@@ -4,10 +4,7 @@ using namespace iotDebug;
 
 std::shared_ptr<http_response> pins_resource::render_POST(const http_request &req)
 {
-    // for (auto &e : req.get_args())
-    // {
-    //     std::debugMessage(e.first << ": " << static_cast<std::string>(e.second) << std::endl;
-    // }
+    PAYLOAD_DEBUG(req.get_args())
     debugMessage("POST");
     uint8_t pinNumber = 0;
     std::string dataType{};
@@ -154,7 +151,6 @@ std::shared_ptr<http_response> user_resource::render_POST(const http_request &re
         do
         {
             newId = ioteyeUser::User::getNextID();
-            debugMessage("newId " + newId); NEWLINE
 
         } while (s_userPins.find(std::to_string(newId)) != s_userPins.end());
 
@@ -162,7 +158,7 @@ std::shared_ptr<http_response> user_resource::render_POST(const http_request &re
         // using userID variable to return response
         userID = std::to_string(newId);
     }
-
+    debugMessage("newId " + userID); NEWLINE
     return std::shared_ptr<http_response>(new string_response("userID=" + userID, 200));
 }
 

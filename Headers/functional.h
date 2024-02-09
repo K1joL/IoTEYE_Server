@@ -4,6 +4,7 @@
 #include <string>
 #ifdef IoTeyeDEBUG
 #include <iostream>
+#include <httpserver.hpp>
 #endif // !IoTeyeDEBUG
 
 namespace func
@@ -30,6 +31,15 @@ namespace iotDebug
 #endif // !IoTeyeDEBUG
     }
 #define NEWLINE debugMessage("\n");
+#define PAYLOAD_DEBUG(req_args)                     \
+    for (auto &e : req_args)                        \
+    {                                               \
+        debugMessage("Payload: ");                  \
+        debugMessage(e.first);                      \
+        debugMessage(": " + std::string(e.second)); \
+        NEWLINE                                     \
+    }
+    
 }
 
 #endif //FUNCTIONAL_H
