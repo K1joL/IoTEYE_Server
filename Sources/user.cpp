@@ -1,4 +1,9 @@
 #include "user.h" 
+#ifdef IOTEYE_USER_DEBUG
+#include "functional.h"
+using namespace iotDebug;
+#endif // !IOTEYE_USER_DEBUG
+
 
 uint64_t ioteyeUser::User::m_idSequence = 0;
 
@@ -7,17 +12,23 @@ int ioteyeUser::User::addPin(uint8_t pinNumber, const std::string& dataType,
 {
     if(m_pinsCounter == 255) // the number of pins must be less than 255
     {
-        cout << 2 << endl;
+#ifdef IOTEYE_USER_DEBUG
+        debugMessage("the number of pins must be less than 255");
+#endif // !IOTEYE_USER_DEBUG
         return 2;
     }
     if(dataType.empty()) // if data type not specified
     {
-        cout << 1 << endl;
+#ifdef IOTEYE_USER_DEBUG
+        debugMessage("data type is not specified");
+#endif // !IOTEYE_USER_DEBUG
         return 1;
     }
     if(m_pinsType.find(pinNumber) != m_pinsType.end()) // is pin exists
     {
-        cout << 3 << endl;
+#ifdef IOTEYE_USER_DEBUG
+        debugMessage("pin exists");
+#endif // !IOTEYE_USER_DEBUG
         return 3;
     }
 
