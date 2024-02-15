@@ -4,8 +4,8 @@ using namespace iotDebug;
 
 std::shared_ptr<http_response> pins_resource::render_POST(const http_request &req)
 {
+    debugMessage("pins POST"); NEWLINE
     PAYLOAD_DEBUG(req.get_args())
-    debugMessage("POST");
     uint8_t pinNumber = 0;
     std::string dataType{};
     std::string userID{};
@@ -36,7 +36,7 @@ std::shared_ptr<http_response> pins_resource::render_POST(const http_request &re
             if ((user->second->addPin(pinNumber, dataType, value)) == 0)
                 return std::shared_ptr<http_response>(new string_response("Pin created!", 201));
             else
-                return std::shared_ptr<http_response>(new string_response("Pin does not exists!", 400));
+                return std::shared_ptr<http_response>(new string_response("Pin already exists!", 400));
         else
             return std::shared_ptr<http_response>(new string_response("User does not exists!", 400));
         break;
@@ -49,6 +49,7 @@ std::shared_ptr<http_response> pins_resource::render_POST(const http_request &re
 std::shared_ptr<http_response> pins_resource::render_GET(const http_request &req)
 {
     debugMessage("PINS GET"); NEWLINE
+    PAYLOAD_DEBUG(req.get_args())
     uint8_t pinNumber = 0;
     std::string userID{};
     std::string value{};
@@ -83,7 +84,8 @@ std::shared_ptr<http_response> pins_resource::render_GET(const http_request &req
 
 std::shared_ptr<http_response> pins_resource::render_PUT(const http_request &req)
 {
-    debugMessage("PUT"); NEWLINE
+    debugMessage("pins PUT"); NEWLINE
+    PAYLOAD_DEBUG(req.get_args())
     uint8_t pinNumber = 0;
     std::string userID{};
     std::string value{};
@@ -110,7 +112,7 @@ std::shared_ptr<http_response> pins_resource::render_PUT(const http_request &req
 
 std::shared_ptr<http_response> pins_resource::render_DELETE(const http_request &req)
 {
-    debugMessage("DELETE"); NEWLINE
+    debugMessage("pins DELETE"); NEWLINE
     uint8_t pinNumber = 0;
     std::string userID{};
     std::string cmd{};
@@ -193,13 +195,14 @@ std::shared_ptr<http_response> device_resource::render_POST(const http_request &
 std::shared_ptr<http_response> device_resource::render_GET(const http_request &req)
 {
     debugMessage("Device GET"); NEWLINE
+    PAYLOAD_DEBUG(req.get_args())
 
-    uint8_t cmd = func::GetCommandCode(req.get_arg("cmd"));
+    std::string cmd = req.get_arg("cmd");
     uint64_t devID = std::stoul(req.get_arg("devID"));
     std::string userID = req.get_arg("userID");
     uint8_t deviceStatus = 0;
     auto device = s_userDevices.find(devID);
-    switch (cmd)
+    switch (func::GetCommandCode(cmd))
     {
     case ioteyeServer::DEVICE_STATUS:
         if (device != s_userDevices.end())
