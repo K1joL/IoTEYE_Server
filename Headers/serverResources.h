@@ -1,6 +1,13 @@
 #ifndef SERVER_RESOURCES_H
 #define SERVER_RESOURCES_H
 
+/**
+ * TODO:
+ * Добавить функции администрирования сервера
+ * Сделать авторизацию
+ * 
+*/
+
 #include <httpserver.hpp>
 #include <unordered_map>
 
@@ -9,7 +16,7 @@
 #endif // !IoTeyeDEBUG
 
 #include "functional.h"
-#include "user.h"
+#include "device.h"
 
 using namespace httpserver;
 
@@ -21,11 +28,11 @@ namespace ioteyeServer
     enum COMMANDS
     {
         NON_COMMAND = 0,
-        REGISTER_USER = 'r' + 'u',              //231
         REGISTER_DEVICE = 'r' + 'd',            //214
-        CREATE_PIN = 'c' + 'p',                 //211
+        DELETE_DEVICE = 'd' + 'd',              //200
         DEVICE_STATUS = 'd' + 's',              //215
         DEVICE_STATUS_UPDATE = 'u' + 's',       //232
+        CREATE_PIN = 'c' + 'p',                 //211
         UPDATE_PIN = 'u' + 'p',                 //229
         DELETE_PIN = 'd' + 'p',                 //212
         GET_PIN = 'p' + 'v',                    //230
@@ -33,8 +40,10 @@ namespace ioteyeServer
     };
 }
 
-static std::unordered_map<std::string, ioteyeUser::User*> s_userPins;
-static std::unordered_map<uint64_t, ioteyeUser::User*> s_userDevices;
+static std::unordered_map<uint64_t, ioteyeDevice::Device*> s_idDeviceMap;
+
+using DeviceIter = std::unordered_map<uint64_t, ioteyeDevice::Device *>::iterator;
+uint16_t authCheck(const std::string &token, DeviceIter* deviceIter = nullptr);
 
 class pins_resource : public http_resource
 {
@@ -50,13 +59,9 @@ class device_resource : public http_resource
     public:
         std::shared_ptr<http_response> render_POST(const http_request& req);
         std::shared_ptr<http_response> render_GET(const http_request& req);
+        std::shared_ptr<http_response> render_PUT(const http_request& req);
+        std::shared_ptr<http_response> render_DELETE(const http_request& req);
 };
 
-class user_resource : public http_resource
-{
-    public:
-        std::shared_ptr<http_response> render_POST(const http_request& req);
-        std::shared_ptr<http_response> render_GET(const http_request& req);
-};
 
 #endif //SERVER_RESOURCES_H
