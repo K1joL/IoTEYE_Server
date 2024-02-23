@@ -35,6 +35,7 @@ namespace ioteyeUser
         private:
             std::string m_userID;
             size_t m_pinsCounter = 0;
+            size_t m_maxPins = 255;
             static uint64_t m_idSequence;
 
         enum ContainerID

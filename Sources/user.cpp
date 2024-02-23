@@ -10,10 +10,10 @@ uint64_t ioteyeUser::User::m_idSequence = 0;
 int ioteyeUser::User::addPin(uint8_t pinNumber, const std::string& dataType, 
     const std::string& defaultData)
 {
-    if(m_pinsCounter == 255) // the number of pins must be less than 255
+    if(m_pinsCounter == m_maxPins) // the number of pins must be less than m_maxPins
     {
 #ifdef IOTEYE_USER_DEBUG
-        debugMessage("the number of pins must be less than 255");
+        debugMessage("the number of pins must be less than " + m_maxPins);
 #endif // !IOTEYE_USER_DEBUG
         return 2;
     }
