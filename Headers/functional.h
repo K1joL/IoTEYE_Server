@@ -9,7 +9,7 @@
 
 namespace func
 {
-    uint8_t GetCommandCode(const std::string& cmd);
+    uint8_t GetCommandCode(const std::string &cmd);
 }
 
 namespace iotDebug
@@ -31,6 +31,25 @@ namespace iotDebug
 #endif // !IoTeyeDEBUG
     }
 #define NEWLINE debugMessage("\n");
+
+template <typename T>
+    void debugMessageln(const T &&mes)
+    {
+#ifdef IoTeyeDEBUG
+        std::cout << mes;
+        NEWLINE
+#endif // !IoTeyeDEBUG
+    }
+
+    template <typename T>
+    void debugMessageln(const T &mes)
+    {
+#ifdef IoTeyeDEBUG
+        std::cout << mes;
+        NEWLINE
+#endif // !IoTeyeDEBUG
+    }
+
 #define PAYLOAD_DEBUG(req_args)                     \
     for (auto &e : req_args)                        \
     {                                               \
@@ -39,7 +58,7 @@ namespace iotDebug
         debugMessage(": " + std::string(e.second)); \
         NEWLINE                                     \
     }
-    
+
 }
 
-#endif //FUNCTIONAL_H
+#endif // FUNCTIONAL_H
