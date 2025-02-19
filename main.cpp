@@ -1,41 +1,37 @@
-#include "serverResources.h"
-#include "functional.h"
-#include "adminOptions.h"
-
-#include <httpserver.hpp>
 #include <iostream>
+#include <ioteyeserver.hpp>
 
-using namespace httpserver;
+#include "adminOptions.h"
+#include "functional.h"
+#include "serverResources.h"
+
 using std::cout;
 using std::endl;
 
 AdminOptions *OPTIONS = new AdminOptions();
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     OPTIONS->init(argc, argv);
-    webserver ws = create_webserver(8081);
-    pins_resource pins;
-    // user_resource user;
-    device_resource devices;
-    // register resources
-    // resources without payload:
-    ws.register_resource("/devices/{token}/pins/{pinNumber}/{dataType}/{defValue}/{cmd}", &pins); // CREATE PIN
-    ws.register_resource("/devices/{token}/pins/{pinNumber}/{cmd}", &pins); // GET PIN && DELETE PIN
-    ws.register_resource("/devices/{token}/pins/{pinNumber}/{value}/{cmd}", &pins); // UPDATE PIN
-    ws.register_resource("/devices/{cmd}", &devices); // REGISTER DEVICE
-    ws.register_resource("/devices/{token}/{cmd}", &devices); // GET DEVICE STATUS && UPDATE DEVICE && DELETE DEVICE
-    // resources with payload: (ONLY for POST and PUT requests)
-    ws.register_resource("/devices/pins", &pins); // CREATE PIN && UPDATE PIN
-    ws.register_resource("/devices", &devices); // REGISTER DEVICE && UPDATE DEVICE
-    ws.start(0);
+    auto pins = std::make_shared<PinsResource>();
+    auto devices = std::make_shared<DeviceResource>();
+    ioteye::Webserver ws =
+        ioteye::Webserver::Builder()
+            .setTcpPort(8080)
+            .setUdpOn()
+            .setUdpPort(8081)
+            .setResource("/devices/{token}/pins/{pinNumber}/{dataType}/{defValue}/{cmd}", pins)  // CREATE PIN
+            .setResource("/devices/{token}/pins/{pinNumber}/{cmd}", pins)          // GET PIN && DELETE PIN
+            .setResource("/devices/{token}/pins/{pinNumber}/{value}/{cmd}", pins)  // UPDATE PIN
+            .setResource("/devices/{cmd}", devices)                                // REGISTER DEVICE
+            .setResource("/devices/{token}/{cmd}",
+                         devices)                // GET DEVICE STATUS && UPDATE DEVICE && DELETE DEVICE
+            .build();
+    ws.start();
     char key;
-    while(true)
-    {
+    while (true) {
         key = getchar();
-        if(key == 27)
-        {
-            ws.sweet_kill();
+        if (key == 27) {
+            ws.shutdown();
             break;
         }
     }

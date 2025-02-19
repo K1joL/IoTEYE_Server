@@ -8,7 +8,7 @@
  * 
 */
 
-#include <httpserver.hpp>
+#include <ioteyeserver.hpp>
 #include <unordered_map>
 
 #ifdef IoTeyeDEBUG
@@ -18,7 +18,7 @@
 #include "functional.h"
 #include "device.h"
 
-using namespace httpserver;
+using namespace ioteye;
 
 using std::cout;
 using std::endl;
@@ -45,22 +45,22 @@ static std::unordered_map<uint64_t, ioteyeDevice::Device*> s_idDeviceMap;
 using DeviceIter = std::unordered_map<uint64_t, ioteyeDevice::Device *>::iterator;
 uint16_t authCheck(const std::string &token, DeviceIter* deviceIter = nullptr);
 
-class pins_resource : public http_resource
+class PinsResource : public HttpResourceHandler
 {
     public:
-        std::shared_ptr<http_response> render_POST(const http_request& req);
-        std::shared_ptr<http_response> render_GET(const http_request &req);
-        std::shared_ptr<http_response> render_PUT(const http_request& req);
-        std::shared_ptr<http_response> render_DELETE(const http_request& req);
+        std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
+        std::shared_ptr<HttpResponse> renderGET(const HttpRequest &req) override;
+        std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
+        std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
 };
 
-class device_resource : public http_resource
+class DeviceResource : public HttpResourceHandler
 {
     public:
-        std::shared_ptr<http_response> render_POST(const http_request& req);
-        std::shared_ptr<http_response> render_GET(const http_request& req);
-        std::shared_ptr<http_response> render_PUT(const http_request& req);
-        std::shared_ptr<http_response> render_DELETE(const http_request& req);
+        std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
+        std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
+        std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
+        std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
 };
 
 

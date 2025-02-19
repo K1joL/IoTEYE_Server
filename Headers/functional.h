@@ -4,7 +4,6 @@
 #include <string>
 #ifdef IoTeyeDEBUG
 #include <iostream>
-#include <httpserver.hpp>
 #endif // !IoTeyeDEBUG
 
 namespace func

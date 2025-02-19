@@ -1,8 +1,10 @@
-cmake_minimum_required (VERSION 3.12 FATAL_ERROR)
+cmake_minimum_required (VERSION 3.18)
 
 project (main VERSION 1.0)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -Wall")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_compile_options(-Wall -Wextra -Wpedantic)
 
 include_directories("Headers/")
 
@@ -18,11 +20,20 @@ set(HEAD_LIST
 	Headers/serverResources.h 
 	Headers/device.h)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(PC_HTTPSERVER REQUIRED IMPORTED_TARGET
-				  libhttpserver>=0.19)
-find_package(jwt-cpp CONFIG REQUIRED)
+find_package(asio REQUIRED)
+find_package(ioteyeserver REQUIRED)
+find_package(Threads REQUIRED)
+# --- Fetch jwt-cpp ---
+include(FetchContent)
+fetchcontent_declare(jwt-cpp 
+    GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
+    GIT_TAG 08bcf77a687fb06e34138e9e9fa12a4ecbe12332 # v0.7.0 release
+)
+set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "disable building examples" FORCE)
+fetchcontent_makeavailable(jwt-cpp)
+# --- End Fetch jwt-cpp ---
 
 add_compile_definitions(IoTeyeDEBUG)
+
 add_executable(main main.cpp ${SRC_LIST})
-target_link_libraries(main PRIVATE PkgConfig::PC_HTTPSERVER jwt-cpp::jwt-cpp)
+target_link_libraries(main PRIVATE ioteyeserver jwt-cpp::jwt-cpp Threads::Threads asio::asio)
