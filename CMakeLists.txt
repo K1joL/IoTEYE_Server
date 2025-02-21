@@ -16,6 +16,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(IoTeyeDEBUG)
 endif()
 
+option(IOTEYE_BUILD_CLIENT "Build the client application" OFF)
+
 include_directories("include/")
 
 set(SRC_LIST
@@ -40,3 +42,8 @@ fetchcontent_makeavailable(jwt-cpp)
 
 add_executable(main main.cpp ${SRC_LIST})
 target_link_libraries(main PRIVATE ioteyeserver jwt-cpp::jwt-cpp Threads::Threads asio::asio)
+
+# Conditional inclusion of client project
+if(IOTEYE_BUILD_CLIENT)
+    add_subdirectory(client)
+endif()
