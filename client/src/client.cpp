@@ -176,7 +176,7 @@ uint16_t Client::getDeviceStatus(const std::string &token) {
         std::string statusStr = extractValue(response.body, "devStatus");
         if (!statusStr.empty()) {
             uint16_t status = std::stoi(statusStr);
-            std::cout << "Device is " << (status ? "Online" : "Offline") << std::endl;
+            std::cout << "Device is " << status << std::endl;
             return status;
         }
     }
