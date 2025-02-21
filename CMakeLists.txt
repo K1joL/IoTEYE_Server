@@ -13,7 +13,7 @@ endif()
 # Conditionally add logging definitions
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Logging enabled!")
-    add_compile_definitions(IoTeyeDEBUG)
+    add_compile_definitions(ENABLE_LOGGING)
 endif()
 
 option(IOTEYE_BUILD_CLIENT "Build the client application" OFF)

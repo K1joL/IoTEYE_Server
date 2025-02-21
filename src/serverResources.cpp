@@ -2,12 +2,10 @@
 
 #include "adminOptions.h"
 
-using namespace iotDebug;
+using namespace ioteye::server::debug;
 
 std::shared_ptr<HttpResponse> PinsResource::renderPOST(const HttpRequest &req) {
-    debugMessage("pins POST");
-    NEWLINE
-    PAYLOAD_DEBUG(req.getArgs())
+    log("pins POST\n", req.getArgs());
 
     // Getting request arguments
     uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
@@ -32,8 +30,8 @@ std::shared_ptr<HttpResponse> PinsResource::renderPOST(const HttpRequest &req) {
     if (device == s_idDeviceMap.end())
         return std::make_shared<HttpResponse>(500, "Something went wrong");
 
-    switch (func::GetCommandCode(cmd)) {
-        case ioteyeServer::CREATE_PIN:
+    switch (ioteye::GetCommandCode(cmd)) {
+        case ioteye::CREATE_PIN:
 
             if ((device->second->addPin(pinNumber, dataType, value)) == 0)
                 return std::make_shared<HttpResponse>(201, "Pin created!");
@@ -46,9 +44,7 @@ std::shared_ptr<HttpResponse> PinsResource::renderPOST(const HttpRequest &req) {
 }
 
 std::shared_ptr<HttpResponse> PinsResource::renderGET(const HttpRequest &req) {
-    debugMessage("PINS GET");
-    NEWLINE
-    PAYLOAD_DEBUG(req.getArgs())
+    log("PINS GET\n", req.getArgs());
 
     // Getting request arguments
     uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
@@ -71,8 +67,8 @@ std::shared_ptr<HttpResponse> PinsResource::renderGET(const HttpRequest &req) {
     if (device == s_idDeviceMap.end())
         return std::make_shared<HttpResponse>(500, "Something went wrong");
 
-    switch (func::GetCommandCode(cmd)) {
-        case ioteyeServer::GET_PIN:
+    switch (ioteye::GetCommandCode(cmd)) {
+        case ioteye::GET_PIN:
             if ((value = device->second->getPin(pinNumber)) != "")
                 return std::make_shared<HttpResponse>(200, "PinValue=" + value);
             else
@@ -84,9 +80,7 @@ std::shared_ptr<HttpResponse> PinsResource::renderGET(const HttpRequest &req) {
 }
 
 std::shared_ptr<HttpResponse> PinsResource::renderPUT(const HttpRequest &req) {
-    debugMessage("pins PUT");
-    NEWLINE
-    PAYLOAD_DEBUG(req.getArgs())
+    log("PINS PUT\n", req.getArgs());
 
     // Getting request arguments
     uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
@@ -109,8 +103,8 @@ std::shared_ptr<HttpResponse> PinsResource::renderPUT(const HttpRequest &req) {
     if (device == s_idDeviceMap.end())
         return std::make_shared<HttpResponse>(500, "Something went wrong");
 
-    switch (func::GetCommandCode(cmd)) {
-        case ioteyeServer::UPDATE_PIN:
+    switch (ioteye::GetCommandCode(cmd)) {
+        case ioteye::UPDATE_PIN:
             if ((device->second->changePin(pinNumber, value)) == 0)
                 return std::make_shared<HttpResponse>(200, "Pin changed");
             else
@@ -122,8 +116,7 @@ std::shared_ptr<HttpResponse> PinsResource::renderPUT(const HttpRequest &req) {
 }
 
 std::shared_ptr<HttpResponse> PinsResource::renderDELETE(const HttpRequest &req) {
-    debugMessage("pins DELETE");
-    NEWLINE
+    log("PINS DELETE\n", req.getArgs());
 
     // Getting request arguments
     uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
@@ -145,8 +138,8 @@ std::shared_ptr<HttpResponse> PinsResource::renderDELETE(const HttpRequest &req)
     if (device == s_idDeviceMap.end())
         return std::make_shared<HttpResponse>(500, "Something went wrong");
 
-    switch (func::GetCommandCode(cmd)) {
-        case ioteyeServer::DELETE_PIN:
+    switch (ioteye::GetCommandCode(cmd)) {
+        case ioteye::DELETE_PIN:
             if ((device->second->removePin(pinNumber)) == 0)
                 return std::make_shared<HttpResponse>(200, "Pin deleted");
             else
@@ -158,22 +151,20 @@ std::shared_ptr<HttpResponse> PinsResource::renderDELETE(const HttpRequest &req)
 }
 
 std::shared_ptr<HttpResponse> DeviceResource::renderPOST(const HttpRequest &req) {
-    debugMessage("Device POST");
-    NEWLINE
+    log("DEVICE POST\n", req.getArgs());
 
     std::string cmd{req.getArg("cmd")};
     std::string payload{"token="};
-    ioteyeDevice::Device *newDevice = nullptr;
-    switch (func::GetCommandCode(cmd)) {
-        case ioteyeServer::REGISTER_DEVICE:
+    ioteye::Device *newDevice = nullptr;
+    switch (ioteye::GetCommandCode(cmd)) {
+        case ioteye::REGISTER_DEVICE:
             // Create new Device
-            newDevice = new ioteyeDevice::Device(OPTIONS->getOutdatedDelay(), OPTIONS->getOfflineDelay(),
-                                                 OPTIONS->getMaxPins());
+            newDevice = new ioteye::Device(OPTIONS->getOutdatedDelay(), OPTIONS->getOfflineDelay(),
+                                           OPTIONS->getMaxPins());
             payload += newDevice->getToken();
             if (newDevice != nullptr) {
-                debugMessageln(s_idDeviceMap.emplace(newDevice->getID(), newDevice).first->first);
-                debugMessageln(
-                    s_idDeviceMap.emplace(newDevice->getID(), newDevice).first->second->getToken());
+                log(s_idDeviceMap.emplace(newDevice->getID(), newDevice).first->first);
+                log(s_idDeviceMap.emplace(newDevice->getID(), newDevice).first->second->getToken());
                 return std::make_shared<HttpResponse>(201, payload);
             } else
                 return std::make_shared<HttpResponse>(500, "Something went wrong!");
@@ -184,9 +175,7 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPOST(const HttpRequest &req)
 }
 
 std::shared_ptr<HttpResponse> DeviceResource::renderGET(const HttpRequest &req) {
-    debugMessage("Device GET");
-    NEWLINE
-    PAYLOAD_DEBUG(req.getArgs())
+    log("DEVICE GET\n", req.getArgs());
 
     // Getting request arguments
     std::string cmd{req.getArg("cmd")};
@@ -208,12 +197,12 @@ std::shared_ptr<HttpResponse> DeviceResource::renderGET(const HttpRequest &req) 
     if (device == s_idDeviceMap.end())
         return std::make_shared<HttpResponse>(500, "Something went wrong");
 
-    switch (func::GetCommandCode(cmd)) {
-        case ioteyeServer::DEVICE_STATUS:
+    switch (ioteye::GetCommandCode(cmd)) {
+        case ioteye::DEVICE_STATUS:
             deviceStatus = device->second->getState();
             return std::make_shared<HttpResponse>(200, "devStatus=" + std::to_string(deviceStatus));
             break;
-        case ioteyeServer::DEVICE_STATUS_UPDATE:
+        case ioteye::DEVICE_STATUS_UPDATE:
             device->second->ping();
             return std::make_shared<HttpResponse>(200, "Device status updated!");
             break;
@@ -223,9 +212,7 @@ std::shared_ptr<HttpResponse> DeviceResource::renderGET(const HttpRequest &req) 
 }
 
 std::shared_ptr<HttpResponse> DeviceResource::renderPUT(const HttpRequest &req) {
-    debugMessage("Device GET");
-    NEWLINE
-    PAYLOAD_DEBUG(req.getArgs())
+    log("DEVICE PUT\n", req.getArgs());
 
     // Getting request arguments
     std::string cmd{req.getArg("cmd")};
@@ -246,8 +233,8 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPUT(const HttpRequest &req) 
     if (device == s_idDeviceMap.end())
         return std::make_shared<HttpResponse>(500, "Something went wrong");
 
-    switch (func::GetCommandCode(cmd)) {
-        case ioteyeServer::DEVICE_STATUS_UPDATE:
+    switch (ioteye::GetCommandCode(cmd)) {
+        case ioteye::DEVICE_STATUS_UPDATE:
             device->second->ping();
             return std::make_shared<HttpResponse>(200, "Device status updated!");
             break;
@@ -257,9 +244,7 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPUT(const HttpRequest &req) 
 }
 
 std::shared_ptr<HttpResponse> DeviceResource::renderDELETE(const HttpRequest &req) {
-    debugMessage("Device DELETE");
-    NEWLINE
-    PAYLOAD_DEBUG(req.getArgs())
+    log("DEVICE DELETE\n", req.getArgs());
 
     // Getting request arguments
     std::string cmd{req.getArg("cmd")};
@@ -281,8 +266,8 @@ std::shared_ptr<HttpResponse> DeviceResource::renderDELETE(const HttpRequest &re
         return std::make_shared<HttpResponse>(500, "Something went wrong");
 
     auto temp = device->second;
-    switch (func::GetCommandCode(cmd)) {
-        case ioteyeServer::DELETE_DEVICE:
+    switch (ioteye::GetCommandCode(cmd)) {
+        case ioteye::DELETE_DEVICE:
             s_idDeviceMap.erase(device);
             delete temp;
             return std::make_shared<HttpResponse>(200, "Device deleted!");

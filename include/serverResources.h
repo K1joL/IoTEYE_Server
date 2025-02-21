@@ -1,67 +1,51 @@
 #ifndef SERVER_RESOURCES_H
 #define SERVER_RESOURCES_H
 
-/**
- * TODO:
- * Добавить функции администрирования сервера
- * Сделать авторизацию
- * 
-*/
-
 #include <ioteyeserver.hpp>
 #include <unordered_map>
 
-#ifdef IoTeyeDEBUG
-#include <iostream>
-#endif // !IoTeyeDEBUG
-
-#include "functional.h"
 #include "device.h"
+#include "functional.h"
 
 using namespace ioteye;
 
 using std::cout;
 using std::endl;
 
-namespace ioteyeServer
-{
-    enum COMMANDS
-    {
-        NON_COMMAND = 0,
-        REGISTER_DEVICE = 'r' + 'd',            //214
-        DELETE_DEVICE = 'd' + 'd',              //200
-        DEVICE_STATUS = 'd' + 's',              //215
-        DEVICE_STATUS_UPDATE = 'u' + 's',       //232
-        CREATE_PIN = 'c' + 'p',                 //211
-        UPDATE_PIN = 'u' + 'p',                 //229
-        DELETE_PIN = 'd' + 'p',                 //212
-        GET_PIN = 'p' + 'v',                    //230
-        COMMANDS_MAX = 9
-    };
+namespace ioteye {
+enum COMMANDS {
+    NON_COMMAND = 0,
+    REGISTER_DEVICE = 'r' + 'd',       // 214
+    DELETE_DEVICE = 'd' + 'd',         // 200
+    DEVICE_STATUS = 'd' + 's',         // 215
+    DEVICE_STATUS_UPDATE = 'u' + 's',  // 232
+    CREATE_PIN = 'c' + 'p',            // 211
+    UPDATE_PIN = 'u' + 'p',            // 229
+    DELETE_PIN = 'd' + 'p',            // 212
+    GET_PIN = 'p' + 'v',               // 230
+    COMMANDS_MAX = 9
+};
 }
 
-static std::unordered_map<uint64_t, ioteyeDevice::Device*> s_idDeviceMap;
+static std::unordered_map<uint64_t, ioteye::Device*> s_idDeviceMap;
 
-using DeviceIter = std::unordered_map<uint64_t, ioteyeDevice::Device *>::iterator;
-uint16_t authCheck(const std::string &token, DeviceIter* deviceIter = nullptr);
+using DeviceIter = std::unordered_map<uint64_t, ioteye::Device*>::iterator;
+uint16_t authCheck(const std::string& token, DeviceIter* deviceIter = nullptr);
 
-class PinsResource : public HttpResourceHandler
-{
-    public:
-        std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
-        std::shared_ptr<HttpResponse> renderGET(const HttpRequest &req) override;
-        std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
-        std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
+class PinsResource : public HttpResourceHandler {
+public:
+    std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
 };
 
-class DeviceResource : public HttpResourceHandler
-{
-    public:
-        std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
-        std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
-        std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
-        std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
+class DeviceResource : public HttpResourceHandler {
+public:
+    std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
 };
 
-
-#endif //SERVER_RESOURCES_H
+#endif  // SERVER_RESOURCES_H

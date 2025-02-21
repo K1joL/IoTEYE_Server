@@ -1,63 +1,50 @@
-#ifndef FUNCTIONAL_H
-#define FUNCTIONAL_H
+#ifndef IOTEYE_FUNCTIONAL_H
+#define IOTEYE_FUNCTIONAL_H
 
 #include <string>
-#ifdef IoTeyeDEBUG
+#ifdef ENABLE_LOGGING
+#include <algorithm>
 #include <iostream>
-#endif // !IoTeyeDEBUG
+#include <sstream>
+#include <unordered_map>
+#endif  // !ENABLE_LOGGING
 
-namespace func
-{
-    uint8_t GetCommandCode(const std::string &cmd);
+namespace ioteye {
+uint8_t GetCommandCode(const std::string &cmd);
 }
 
-namespace iotDebug
-{
-    // Debug functions
-    template <typename T>
-    void debugMessage(const T &&mes)
-    {
-#ifdef IoTeyeDEBUG
-        std::cout << mes;
-#endif // !IoTeyeDEBUG
-    }
-
-    template <typename T>
-    void debugMessage(const T &mes)
-    {
-#ifdef IoTeyeDEBUG
-        std::cout << mes;
-#endif // !IoTeyeDEBUG
-    }
-#define NEWLINE debugMessage("\n");
-
-template <typename T>
-    void debugMessageln(const T &&mes)
-    {
-#ifdef IoTeyeDEBUG
-        std::cout << mes;
-        NEWLINE
-#endif // !IoTeyeDEBUG
-    }
-
-    template <typename T>
-    void debugMessageln(const T &mes)
-    {
-#ifdef IoTeyeDEBUG
-        std::cout << mes;
-        NEWLINE
-#endif // !IoTeyeDEBUG
-    }
-
-#define PAYLOAD_DEBUG(req_args)                     \
-    for (auto &e : req_args)                        \
-    {                                               \
-        debugMessage("Payload: ");                  \
-        debugMessage(e.first);                      \
-        debugMessage(": " + std::string(e.second)); \
-        NEWLINE                                     \
-    }
-
+namespace ioteye::server::debug {
+#ifdef ENABLE_LOGGING
+template <typename... Args>
+inline void log(Args &&...args) {
+    std::ostringstream oss;
+    (oss << ... << std::forward<Args>(args));
+    std::cout << "LOG: " << oss.str() << std::endl;
 }
 
-#endif // FUNCTIONAL_H
+// << operator overload specifically for std::unordered_map
+template <typename K, typename V>
+std::ostream& operator<<(std::ostream& os, const std::unordered_map<K, V>& map) {
+    os << "{";
+    bool first = true;
+    for (const auto& pair : map) {
+        if (!first)
+            os << ", ";
+        first = false;
+        os << pair.first << ": " << pair.second;
+    }
+    os << "}";
+    return os;
+}
+
+#else
+template <typename... Args>
+inline void log(Args &&...args) {
+    // Dummy code to prevent unused parameter warning
+    (void)std::initializer_list<int>{(std::forward<Args>(args), 0)...};
+}
+#endif
+
+}  // namespace ioteye::server::debug
+
+#endif  // IOTEYE_FUNCTIONAL_H

@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
             .setResource("/devices/{token}/pins/{pinNumber}/{value}/{cmd}", pins)  // UPDATE PIN
             .setResource("/devices/{cmd}", devices)                                // REGISTER DEVICE
             .setResource("/devices/{token}/{cmd}",
-                         devices)                // GET DEVICE STATUS && UPDATE DEVICE && DELETE DEVICE
+                         devices)  // GET DEVICE STATUS && UPDATE DEVICE && DELETE DEVICE
             .build();
     ws.start();
     char key;
