@@ -207,7 +207,7 @@ int main() {
                           << "All of the pins will be deleted too." << std::endl
                           << "(Y)es or (N)o: ";
                 std::cin >> temp;
-                if (temp != "Yes" || temp[0] != 'Y' || temp[0] != 'y') {
+                if (temp != "Yes" && temp[0] != 'Y' && temp[0] != 'y') {
                     std::cout << "Cancel device deletion!" << std::endl;
                     break;
                 }
