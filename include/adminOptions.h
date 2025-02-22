@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 
 class AdminOptions {
 public:
@@ -62,6 +63,6 @@ private:
     uint16_t m_offlineDelayOpt = 1000;
 };
 
-extern AdminOptions *OPTIONS;
+extern std::unique_ptr<AdminOptions> OPTIONS;
 
 #endif  // !ADMIN_OPTIONS_H

@@ -3,27 +3,28 @@
 #include "functional.h"
 using namespace ioteye::server::debug;
 
-ioteye::Device::StateTimer::StateTimer(std::function<void(uint8_t)> callback, std::mutex* mutex)
+ioteye::Device::StateTimer::StateTimer(std::function<void(uint8_t)> callback,
+                                       std::shared_ptr<std::mutex> mutex)
     : m_changingMutex(mutex), m_cbChangeState{callback} {
     std::thread([this]() { threadLoop(); }).detach();
 }
 
 // TODO: Rewrite loop fucntion with Finite-state machine
 void ioteye::Device::StateTimer::threadLoop() {
-    threadStarted();
-    while (true) {
+    while (m_isStopped) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        if (wasPing() || isStopped()) {
-            setPingFalse();
+        if (m_wasPing || m_isStopped) {
+            m_wasPing = false;
             m_start = std::chrono::high_resolution_clock::now();
             while (std::chrono::high_resolution_clock::now() - m_start < m_outdatedDelay) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                if (wasPing() || isStopped())
+                if (m_wasPing || m_isStopped)
                     break;
             }
-            if (wasPing()) {
+            // set state = online
+            if (m_wasPing) {
                 m_cbChangeState(ioteye::Device::ONLINE);
-                setPingFalse();
+                m_wasPing = false;
                 continue;
             }
             // set state = outdated
@@ -31,47 +32,34 @@ void ioteye::Device::StateTimer::threadLoop() {
             m_start = std::chrono::high_resolution_clock::now();
             while (std::chrono::high_resolution_clock::now() - m_start < m_offlineDelay) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                if (wasPing() || isStopped())
+                if (m_wasPing || m_isStopped)
                     break;
             }
-            if (wasPing()) {
+            if (m_wasPing) {
                 m_cbChangeState(ioteye::Device::ONLINE);
-                setPingFalse();
+                m_wasPing = false;
                 continue;
             }
             // set state = offline
             m_cbChangeState(ioteye::Device::OFFLINE);
         }
-        if (isStopped())
-            break;
     }
-    killThread();
 }
 
 void ioteye::Device::StateTimer::ping() {
-    m_changingMutex->lock();
     m_wasPing = true;
-    m_changingMutex->unlock();
 }
 
 void ioteye::Device::StateTimer::setPingFalse() {
-    m_changingMutex->lock();
     m_wasPing = false;
-    m_changingMutex->unlock();
 }
 
 bool ioteye::Device::StateTimer::wasPing() {
-    bool temp = false;
-    m_changingMutex->lock();
-    temp = m_wasPing;
-    m_changingMutex->unlock();
-    return temp;
+    return m_wasPing;
 }
 
 void ioteye::Device::StateTimer::stop() {
-    m_changingMutex->lock();
     m_isStopped = true;
-    m_changingMutex->unlock();
 }
 
 void ioteye::Device::StateTimer::setDelays(ms outdatedDelay, ms offlineDelay) {
@@ -89,41 +77,14 @@ ms ioteye::Device::StateTimer::getRemainingTime() {
     return temp;
 }
 
-void ioteye::Device::StateTimer::threadStarted() {
-    m_changingMutex->lock();
-    m_threadAlive = true;
-    m_changingMutex->unlock();
-}
-
-void ioteye::Device::StateTimer::killThread() {
-    m_changingMutex->lock();
-    m_threadAlive = false;
-    m_changingMutex->unlock();
-}
-
-bool ioteye::Device::StateTimer::isThreadAlive() {
-    bool temp = false;
-    m_changingMutex->lock();
-    temp = m_threadAlive;
-    m_changingMutex->unlock();
-    return temp;
-}
-
-bool ioteye::Device::StateTimer::isStopped() {
-    bool temp = false;
-    m_changingMutex->lock();
-    temp = m_isStopped;
-    m_changingMutex->unlock();
-    return temp;
-}
-
 uint64_t ioteye::Device::m_idSequence = 1;
 
 ioteye::Device::Device() {
     m_id = m_idSequence;
     m_idSequence++;
-    m_timerMutex = new std::mutex();
-    m_stateTimer = new StateTimer{std::bind(&Device::changeState, this, std::placeholders::_1), m_timerMutex};
+    m_timerMutex = std::make_shared<std::mutex>();
+    m_stateTimer = std::make_shared<StateTimer>(std::bind(&Device::changeState, this, std::placeholders::_1),
+                                                m_timerMutex);
     generateToken();
 }
 
@@ -146,24 +107,17 @@ std::string ioteye::Device::getToken() {
 }
 
 uint8_t ioteye::Device::getState() {
-    m_timerMutex->lock();
-    uint8_t temp = m_state;
-    m_timerMutex->unlock();
-    return temp;
+    return m_state;
 }
 
 void ioteye::Device::changeState(uint8_t state) {
-    m_timerMutex->lock();
     m_state = state;
-    m_timerMutex->unlock();
 }
 
 ioteye::Device::~Device() {
     m_stateTimer->stop();
-    while (m_stateTimer->isThreadAlive())
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    delete m_timerMutex;
-    delete m_stateTimer;
+    // delete m_timerMutex;
+    // delete m_stateTimer;
 }
 
 int ioteye::Device::addPin(uint16_t pinNumber, const std::string& dataType, const std::string& defaultData) {

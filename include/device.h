@@ -4,8 +4,10 @@
 #include <functional.h>
 #include <jwt-cpp/jwt.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <thread>
 
@@ -15,7 +17,7 @@ namespace ioteye {
 class Device {
     class StateTimer {
     public:
-        StateTimer(std::function<void(uint8_t)> callback, std::mutex *mutex);
+        StateTimer(std::function<void(uint8_t)> callback, std::shared_ptr<std::mutex> mutex);
         void threadLoop();
         void ping();
         void setPingFalse();
@@ -25,22 +27,15 @@ class Device {
         ms getRemainingTime();
         ~StateTimer() {
         }
-        void threadStarted();
-        void killThread();
-        bool isThreadAlive();
 
     private:
-        bool isStopped();
-
-    private:
-        bool m_wasPing = false;
-        std::mutex *m_changingMutex = nullptr;
+        std::atomic<bool> m_wasPing{false};
+        std::shared_ptr<std::mutex> m_changingMutex;
         ms m_outdatedDelay = ms(500);
         ms m_offlineDelay = ms(1000);
         std::chrono::high_resolution_clock::time_point m_start;
         std::function<void(uint8_t)> m_cbChangeState;
-        bool m_isStopped = false;
-        bool m_threadAlive = false;
+        std::atomic<bool> m_isStopped{false};
     };
 
 public:
@@ -68,9 +63,9 @@ private:
     static uint64_t m_idSequence;
     uint64_t m_id;
     std::string m_token;
-    uint8_t m_state = OFFLINE;
-    std::mutex *m_timerMutex = nullptr;
-    StateTimer *m_stateTimer;
+    std::atomic<uint8_t> m_state{OFFLINE};
+    std::shared_ptr<std::mutex> m_timerMutex;
+    std::shared_ptr<StateTimer> m_stateTimer;
 
     // Virtual pins data type IDs
     enum ContainerID { INTID = 105, DOUBLEID = 100, STRINGID = 115 };

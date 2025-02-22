@@ -3,7 +3,6 @@
 
 #include <string>
 #ifdef ENABLE_LOGGING
-#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>

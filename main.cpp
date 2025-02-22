@@ -8,7 +8,7 @@
 using std::cout;
 using std::endl;
 
-AdminOptions *OPTIONS = new AdminOptions();
+std::unique_ptr<AdminOptions> OPTIONS = std::make_unique<AdminOptions>();
 
 int main(int argc, char **argv) {
     OPTIONS->init(argc, argv);

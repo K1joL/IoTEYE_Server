@@ -2,6 +2,7 @@
 #define SERVER_RESOURCES_H
 
 #include <ioteyeserver.hpp>
+#include <memory>
 #include <unordered_map>
 
 #include "device.h"
@@ -27,10 +28,11 @@ enum COMMANDS {
 };
 }
 
-static std::unordered_map<uint64_t, ioteye::Device*> s_idDeviceMap;
+using DevicePtr = std::shared_ptr<ioteye::Device>;
+static std::unordered_map<uint64_t, DevicePtr> s_idDeviceMap;
 
-using DeviceIter = std::unordered_map<uint64_t, ioteye::Device*>::iterator;
-uint16_t authCheck(const std::string& token, DeviceIter* deviceIter = nullptr);
+using DeviceIter = std::unordered_map<uint64_t, DevicePtr>::iterator;
+uint16_t authCheck(const std::string& token, DeviceIter& deviceIter);
 
 class PinsResource : public HttpResourceHandler {
 public:
