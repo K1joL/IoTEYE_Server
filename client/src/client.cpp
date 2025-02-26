@@ -51,7 +51,7 @@ std::string Client::sendTcpRequest(const std::string &request, tcp::resolver::re
     std::string responseString;
 
     std::getline(responseStream, headerLine);
-    if(headerLine != "\r")
+    if (headerLine != "\r")
         responseString += headerLine;
     while (std::getline(responseStream, headerLine) && headerLine != "\r") {
         responseString += '\n' + headerLine;
@@ -59,7 +59,7 @@ std::string Client::sendTcpRequest(const std::string &request, tcp::resolver::re
 
     // Read the body
     std::stringstream bodyStream;
-    bodyStream << responseStream.rdbuf(); // Read any data remaining in the streambuf
+    bodyStream << responseStream.rdbuf();  // Read any data remaining in the streambuf
 
     // Keep reading from the socket until EOF or an error occurs
     while (ec != asio::error::eof) {
@@ -175,9 +175,14 @@ uint16_t Client::getDeviceStatus(const std::string &token) {
         std::cout << "Status Response: " << response.body << std::endl;
         std::string statusStr = extractValue(response.body, "devStatus");
         if (!statusStr.empty()) {
-            uint16_t status = std::stoi(statusStr);
-            std::cout << "Device is " << status << std::endl;
-            return status;
+            try {
+                uint16_t status = std::stoi(statusStr);
+                std::cout << "Device is " << status << std::endl;
+                return status;
+            } catch (const std::invalid_argument &e) {
+                std::cerr << "Error when getting status: " << response.body << std::endl;
+                return 0;
+            }
         }
     }
 
@@ -238,11 +243,21 @@ std::string Client::getVirtualPin(const std::string &token, const std::string &p
 }
 
 int Client::getVirtualPinInt(const std::string &token, const std::string &pinNumber) {
-    return std::stoi(getVirtualPin(token, pinNumber));
+    try {
+        return std::stoi(getVirtualPin(token, pinNumber));
+    } catch (const std::invalid_argument &e) {
+        std::cerr << "Error when getting value: " << e.what() << std::endl;
+        return 0;
+    }
 }
 
 double Client::getVirtualPinDouble(const std::string &token, const std::string &pinNumber) {
-    return std::stod(getVirtualPin(token, pinNumber));
+    try {
+        return std::stod(getVirtualPin(token, pinNumber));
+    } catch (const std::invalid_argument &e) {
+        std::cerr << "Error when getting value: " << e.what() << std::endl;
+        return 0.0;
+    }
 }
 
 }  // namespace ioteye

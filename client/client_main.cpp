@@ -1,7 +1,13 @@
 #include "client.hpp"
 
 bool isPinNumberValid(std::string &number) {
-    int pinNumber = stoi(number);
+    int pinNumber = 0;
+    try {
+        pinNumber = stoi(number);
+    } catch (const std::invalid_argument &e) {
+        std::cerr << "Invalid argument: " << e.what() << std::endl;
+        return false;
+    }
     return (pinNumber < 256 && pinNumber > 0);
 }
 bool isPinTypeValid(std::string &type) {
@@ -97,7 +103,7 @@ int main() {
                 std::cout << "Enter the number of pin you want to create: ";
                 do {
                     if (!pin.empty())
-                        std::cout << "Please try again! The number must be greater than 0 and less than 256!";
+                        std::cout << "Please try again! The number must be greater than 0 and less than 256!\n";
                     std::cin >> pin;
                 } while (!isPinNumberValid(pin));
 
@@ -155,7 +161,7 @@ int main() {
                 }
                 std::cout << "Enter the number of pin you want to get." << std::endl;
                 if (prevOption == '5' || prevOption == '6' || prevOption == '7')
-                    std::cout << "Leave empty if you want to use number of pin used before.";
+                    std::cout << "Leave empty if you want to use number of pin used before.\n";
                 std::cout << "Pin number: ";
                 std::cin >> temp;
                 if (!temp.empty()) {
