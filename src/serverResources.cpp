@@ -5,6 +5,8 @@
 using namespace ioteye::server::debug;
 using ioteye::HttpStatusCode;
 
+std::unordered_map<uint64_t, DevicePtr> s_idDeviceMap;
+
 std::shared_ptr<HttpResponse> PinsResource::renderPOST(const HttpRequest &req) {
     log("pins POST\n", req.getArgs());
 
@@ -152,7 +154,7 @@ std::shared_ptr<HttpResponse> PinsResource::renderDELETE(const HttpRequest &req)
 }
 
 std::shared_ptr<HttpResponse> DeviceResource::renderPOST(const HttpRequest &req) {
-    log("DEVICE POST\n", req.getArgs());
+    log("DEVICE POST\n Request Arguments:\n", req.getArgs(), "---");
 
     std::string cmd{req.getArg("cmd")};
     std::string payload{"token="};
@@ -164,8 +166,12 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPOST(const HttpRequest &req)
                                                          OPTIONS->getOfflineDelay(), OPTIONS->getMaxPins());
             payload += newDevice->getToken();
             if (newDevice != nullptr) {
-                log(s_idDeviceMap.emplace(newDevice->getID(), newDevice).first->first);
-                log(s_idDeviceMap.emplace(newDevice->getID(), newDevice).first->second->getToken());
+                log(s_idDeviceMap.emplace(newDevice->getID(), newDevice).second ? "Device inserted!"
+                                                                                : "Device failed to insert!");
+                auto it = s_idDeviceMap.find(newDevice->getID());
+                log("Inserted device token: ",
+                    it != s_idDeviceMap.end() ? it->second->getToken() : "Nothing");
+                log("DeviceMap Size: ", s_idDeviceMap.size());
                 return std::make_shared<HttpResponse>(HttpStatusCode::CREATED, payload);
             } else
                 return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,

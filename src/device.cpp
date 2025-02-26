@@ -1,75 +1,75 @@
 #include "device.h"
 
 #include "functional.h"
-using namespace ioteye::server::debug;
+namespace ioteye {
+using namespace server::debug;
 
-ioteye::Device::StateTimer::StateTimer(std::function<void(uint8_t)> callback,
-                                       std::shared_ptr<std::mutex> mutex)
-    : m_changingMutex(mutex), m_cbChangeState{callback} {
+Device::StateTimer::StateTimer(std::function<void(uint8_t)> callback, std::shared_ptr<std::mutex> mutex)
+    : m_changingMutex(mutex), m_cbChangeState{callback}, m_isStopped(false) {
     std::thread([this]() { threadLoop(); }).detach();
 }
 
 // TODO: Rewrite loop fucntion with Finite-state machine
-void ioteye::Device::StateTimer::threadLoop() {
+void Device::StateTimer::threadLoop() {
     while (m_isStopped) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        // std::this_thread::sleep_for(std::chrono::milliseconds(1));
         if (m_wasPing || m_isStopped) {
             m_wasPing = false;
             m_start = std::chrono::high_resolution_clock::now();
             while (std::chrono::high_resolution_clock::now() - m_start < m_outdatedDelay) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                // std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 if (m_wasPing || m_isStopped)
                     break;
             }
             // set state = online
             if (m_wasPing) {
-                m_cbChangeState(ioteye::Device::ONLINE);
+                m_cbChangeState(Device::ONLINE);
                 m_wasPing = false;
                 continue;
             }
             // set state = outdated
-            m_cbChangeState(ioteye::Device::OUTDATED);
+            m_cbChangeState(Device::OUTDATED);
             m_start = std::chrono::high_resolution_clock::now();
             while (std::chrono::high_resolution_clock::now() - m_start < m_offlineDelay) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                // std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 if (m_wasPing || m_isStopped)
                     break;
             }
             if (m_wasPing) {
-                m_cbChangeState(ioteye::Device::ONLINE);
+                m_cbChangeState(Device::ONLINE);
                 m_wasPing = false;
                 continue;
             }
             // set state = offline
-            m_cbChangeState(ioteye::Device::OFFLINE);
+            m_cbChangeState(Device::OFFLINE);
         }
     }
 }
 
-void ioteye::Device::StateTimer::ping() {
+void Device::StateTimer::ping() {
     m_wasPing = true;
 }
 
-void ioteye::Device::StateTimer::setPingFalse() {
+void Device::StateTimer::setPingFalse() {
     m_wasPing = false;
 }
 
-bool ioteye::Device::StateTimer::wasPing() {
+bool Device::StateTimer::wasPing() {
     return m_wasPing;
 }
 
-void ioteye::Device::StateTimer::stop() {
+void Device::StateTimer::stop() {
     m_isStopped = true;
 }
 
-void ioteye::Device::StateTimer::setDelays(ms outdatedDelay, ms offlineDelay) {
+void Device::StateTimer::setDelays(ms outdatedDelay, ms offlineDelay) {
     m_changingMutex->lock();
     m_outdatedDelay = outdatedDelay;
     m_offlineDelay = offlineDelay;
     m_changingMutex->unlock();
 }
 
-ms ioteye::Device::StateTimer::getRemainingTime() {
+ms Device::StateTimer::getRemainingTime() {
     ms temp(0);
     m_changingMutex->lock();
     temp = ms((std::chrono::high_resolution_clock::now() - m_start).count());
@@ -77,9 +77,9 @@ ms ioteye::Device::StateTimer::getRemainingTime() {
     return temp;
 }
 
-uint64_t ioteye::Device::m_idSequence = 1;
+uint64_t Device::m_idSequence = 1;
 
-ioteye::Device::Device() {
+Device::Device() {
     m_id = m_idSequence;
     m_idSequence++;
     m_timerMutex = std::make_shared<std::mutex>();
@@ -88,12 +88,44 @@ ioteye::Device::Device() {
     generateToken();
 }
 
-ioteye::Device::Device(uint16_t outdatedDelay, uint16_t offlineDelay, uint16_t maxPins) : Device() {
+Device::Device(uint16_t outdatedDelay, uint16_t offlineDelay, uint16_t maxPins) : Device() {
     m_stateTimer->setDelays(ms(outdatedDelay), ms(offlineDelay));
     m_maxPins = maxPins;
 }
 
-void ioteye::Device::generateToken() {
+Device::Device(Device&& other) noexcept
+    : m_id(other.m_id),
+      m_token(std::move(other.m_token)),
+      m_pinsType(std::move(other.m_pinsType)),
+      m_intPins(std::move(other.m_intPins)),
+      m_doublePins(std::move(other.m_doublePins)),
+      m_stringPins(std::move(other.m_stringPins)),
+      m_pinsCounter(other.m_pinsCounter),
+      m_maxPins(other.m_maxPins) {
+    m_stateTimer = std::make_shared<StateTimer>(std::bind(&Device::changeState, this, std::placeholders::_1),
+                                                m_timerMutex);
+    m_idSequence = other.m_id + 1;
+}
+
+Device& Device::operator=(Device&& other) noexcept {
+    if (this != &other) {
+        m_id = other.m_id;
+        m_token = std::move(other.m_token);
+        m_pinsType = std::move(other.m_pinsType);
+        m_intPins = std::move(other.m_intPins);
+        m_doublePins = std::move(other.m_doublePins);
+        m_stringPins = std::move(other.m_stringPins);
+        m_pinsCounter = other.m_pinsCounter;
+        m_maxPins = other.m_maxPins;
+        m_timerMutex = std::make_shared<std::mutex>();
+        m_stateTimer = std::make_shared<StateTimer>(
+            std::bind(&Device::changeState, this, std::placeholders::_1), m_timerMutex);
+        m_idSequence = other.m_id + 1;
+    }
+    return *this;
+}
+
+void Device::generateToken() {
     auto token = jwt::create()
                      .set_type("JWS")
                      .set_payload_claim("deviceID", jwt::claim(std::to_string(m_id)))
@@ -102,25 +134,25 @@ void ioteye::Device::generateToken() {
     m_token = token;
 }
 
-std::string ioteye::Device::getToken() {
+std::string Device::getToken() {
     return m_token;
 }
 
-uint8_t ioteye::Device::getState() {
+uint8_t Device::getState() {
     return m_state;
 }
 
-void ioteye::Device::changeState(uint8_t state) {
+void Device::changeState(uint8_t state) {
     m_state = state;
 }
 
-ioteye::Device::~Device() {
+Device::~Device() {
     m_stateTimer->stop();
     // delete m_timerMutex;
     // delete m_stateTimer;
 }
 
-int ioteye::Device::addPin(uint16_t pinNumber, const std::string& dataType, const std::string& defaultData) {
+int Device::addPin(uint16_t pinNumber, const std::string& dataType, const std::string& defaultData) {
     if (m_pinsCounter == m_maxPins)  // the number of pins must be less than m_maxPins
     {
         log("the number of pins must be less than ", m_maxPins);
@@ -158,7 +190,7 @@ int ioteye::Device::addPin(uint16_t pinNumber, const std::string& dataType, cons
     return 0;
 }
 
-int ioteye::Device::changePin(uint16_t pinNumber, const std::string& data) {
+int Device::changePin(uint16_t pinNumber, const std::string& data) {
     if (m_pinsType.find(pinNumber) == m_pinsType.end())
         return 1;
 
@@ -180,7 +212,7 @@ int ioteye::Device::changePin(uint16_t pinNumber, const std::string& data) {
     return 0;
 }
 
-int ioteye::Device::removePin(uint16_t pinNumber) {
+int Device::removePin(uint16_t pinNumber) {
     if (m_pinsType.find(pinNumber) == m_pinsType.end())
         return 1;
 
@@ -204,7 +236,7 @@ int ioteye::Device::removePin(uint16_t pinNumber) {
     return 0;
 }
 
-std::string ioteye::Device::getPin(uint16_t pinNumber) {
+std::string Device::getPin(uint16_t pinNumber) {
     if (m_pinsType.find(pinNumber) == m_pinsType.end())
         return std::string{""};
 
@@ -220,3 +252,92 @@ std::string ioteye::Device::getPin(uint16_t pinNumber) {
             return std::string{""};
     }
 }
+
+// Device builder
+Device::Builder::Builder()
+    : m_outdatedDelay(500), m_offlineDelay(1000), m_maxPins(255), m_id(0), m_state(OFFLINE) {
+}
+
+Device::Builder& Device::Builder::setOutdatedDelay(uint16_t outdatedDelay) {
+    m_outdatedDelay = outdatedDelay;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setOfflineDelay(uint16_t offlineDelay) {
+    m_offlineDelay = offlineDelay;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setMaxPins(uint16_t maxPins) {
+    m_maxPins = maxPins;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setID(uint64_t id) {
+    m_id = id;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setToken(const std::string& token) {
+    m_token = token;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setState(uint8_t state) {
+    m_state = state;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setIntPin(uint16_t pinNumber, int value) {
+    m_intPins[pinNumber] = value;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setDoublePin(uint16_t pinNumber, double value) {
+    m_doublePins[pinNumber] = value;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setStringPin(uint16_t pinNumber, const std::string& value) {
+    m_stringPins[pinNumber] = value;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setPinsTypePin(uint16_t pinNumber, uint8_t value) {
+    m_pinsType[pinNumber] = value;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setIntPinMap(std::unordered_map<uint16_t, int>&& intPinMap) {
+    m_intPins = intPinMap;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setDoublePinMap(std::unordered_map<uint16_t, double>&& doublePinMap) {
+    m_doublePins = doublePinMap;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setStringPinMap(std::unordered_map<uint16_t, std::string>&& stringPinMap) {
+    m_stringPins = stringPinMap;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setPinsTypeMap(std::unordered_map<uint16_t, uint8_t>&& pinsTypeMap) {
+    m_pinsType = pinsTypeMap;
+    return *this;
+}
+
+Device Device::Builder::build() {
+    Device device(m_outdatedDelay, m_offlineDelay, m_maxPins);
+    device.m_id = m_id;
+    device.m_token = m_token;
+    device.m_state = m_state;
+    device.m_intPins = m_intPins;
+    device.m_doublePins = m_doublePins;
+    device.m_stringPins = m_stringPins;
+    device.m_pinsType = m_pinsType;
+    return device;
+}
+
+}  // namespace ioteye

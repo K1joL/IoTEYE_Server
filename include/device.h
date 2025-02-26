@@ -1,20 +1,28 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include <functional.h>
 #include <jwt-cpp/jwt.h>
 
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <thread>
 
+namespace ioteye {
 using ms = std::chrono::milliseconds;
 
-namespace ioteye {
+// Forward declarartion. Full Declaration in file_hanlder.h
+class FileHandler;
+
+// Forward declaration. For using.
+class Device;
+using DevicePtr = std::shared_ptr<ioteye::Device>;
+
 class Device {
+    friend class FileHandler;
     class StateTimer {
     public:
         StateTimer(std::function<void(uint8_t)> callback, std::shared_ptr<std::mutex> mutex);
@@ -26,6 +34,7 @@ class Device {
         void setDelays(ms outdatedDelay, ms offlineDelay);
         ms getRemainingTime();
         ~StateTimer() {
+            stop();
         }
 
     private:
@@ -38,9 +47,45 @@ class Device {
         std::atomic<bool> m_isStopped{false};
     };
 
+private:
+    class Builder {
+    public:
+        Builder();
+        Builder& setOutdatedDelay(uint16_t outdatedDelay);
+        Builder& setOfflineDelay(uint16_t offlineDelay);
+        Builder& setMaxPins(uint16_t maxPins);
+        Builder& setID(uint64_t id);
+        Builder& setToken(const std::string& token);
+        Builder& setState(uint8_t state);
+        Builder& setIntPin(uint16_t pinNumber, int value);
+        Builder& setDoublePin(uint16_t pinNumber, double value);
+        Builder& setStringPin(uint16_t pinNumber, const std::string& value);
+        Builder& setPinsTypePin(uint16_t pinNumber, uint8_t value);
+        Builder& setIntPinMap(std::unordered_map<uint16_t, int>&& intPinMap);
+        Builder& setDoublePinMap(std::unordered_map<uint16_t, double>&& doublePinMap);
+        Builder& setStringPinMap(std::unordered_map<uint16_t, std::string>&& stringPinMap);
+        Builder& setPinsTypeMap(std::unordered_map<uint16_t, uint8_t>&& pinsTypeMap);
+
+        Device build();
+
+    private:
+        uint16_t m_outdatedDelay;
+        uint16_t m_offlineDelay;
+        uint16_t m_maxPins;
+        uint64_t m_id;
+        std::string m_token;
+        uint8_t m_state;
+        std::unordered_map<uint16_t, uint8_t> m_pinsType;
+        std::unordered_map<uint16_t, int> m_intPins;
+        std::unordered_map<uint16_t, double> m_doublePins;
+        std::unordered_map<uint16_t, std::string> m_stringPins;
+    };
+
 public:
     Device();
     Device(uint16_t outdatedDelay, uint16_t offlineDelay, uint16_t maxPins);
+    Device(Device&& other) noexcept;
+    Device& operator=(Device&& other) noexcept;
     void generateToken();
     std::string getToken();
     inline uint64_t getID() {
@@ -54,10 +99,29 @@ public:
     ~Device();
 
     // Virtual pins interactions
-    int addPin(uint16_t pinNumber, const std::string &dataType, const std::string &defaultData);
-    int changePin(uint16_t pinNumber, const std::string &data);
+    int addPin(uint16_t pinNumber, const std::string& dataType, const std::string& defaultData);
+    int changePin(uint16_t pinNumber, const std::string& data);
     int removePin(uint16_t pinNumber);
     std::string getPin(uint16_t pinNumber);
+    uint16_t pinsCreated() {
+        return m_pinsCounter;
+    };
+
+    // Getters for pins maps
+     const std::unordered_map<uint16_t, uint8_t>& getPinsTypes() const {
+        return m_pinsType;
+    }
+    const std::unordered_map<uint16_t, int>& getIntPins() const {
+        return m_intPins;
+    }
+
+    const std::unordered_map<uint16_t, double>& getDoublePins() const {
+        return m_doublePins;
+    }
+
+    const std::unordered_map<uint16_t, std::string>& getStringPins() const {
+        return m_stringPins;
+    }
 
 private:
     static uint64_t m_idSequence;
@@ -71,10 +135,10 @@ private:
     enum ContainerID { INTID = 105, DOUBLEID = 100, STRINGID = 115 };
 
     // Virtual pins data
-    std::unordered_map<uint8_t, uint8_t> m_pinsType;
-    std::unordered_map<uint8_t, int> m_intPins;
-    std::unordered_map<uint8_t, double> m_doublePins;
-    std::unordered_map<uint8_t, std::string> m_stringPins;
+    std::unordered_map<uint16_t, uint8_t> m_pinsType;
+    std::unordered_map<uint16_t, int> m_intPins;
+    std::unordered_map<uint16_t, double> m_doublePins;
+    std::unordered_map<uint16_t, std::string> m_stringPins;
     uint16_t m_pinsCounter = 0;
     uint16_t m_maxPins = 255;
 

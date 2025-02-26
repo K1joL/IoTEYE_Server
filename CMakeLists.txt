@@ -23,25 +23,26 @@ include_directories("include/")
 set(SRC_LIST
     src/functional.cpp
     src/serverResources.cpp
-    src/device.cpp)
-
-# --- Find Dependencies ---
-find_package(asio REQUIRED)
-find_package(ioteyeserver REQUIRED)
-find_package(Threads REQUIRED)
-
-# --- Fetch jwt-cpp ---
-include(FetchContent)
-fetchcontent_declare(jwt-cpp
+    src/device.cpp
+    src/file_handler.cpp)
+    
+    # --- Fetch jwt-cpp ---
+    include(FetchContent)
+    fetchcontent_declare(jwt-cpp
     GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
     GIT_TAG 08bcf77a687fb06e34138e9e9fa12a4ecbe12332 # v0.7.0 release
-)
-set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "disable building examples" FORCE)
-fetchcontent_makeavailable(jwt-cpp)
-# --- End Fetch jwt-cpp ---
+    )
+    set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "disable building examples" FORCE)
+    fetchcontent_makeavailable(jwt-cpp)
+    # --- End Fetch jwt-cpp ---
+    
+    # --- Find Dependencies ---
+    find_package(asio REQUIRED)
+    find_package(ioteyeserver REQUIRED)
+    find_package(Threads REQUIRED)
 
 add_executable(main main.cpp ${SRC_LIST})
-target_link_libraries(main PRIVATE ioteyeserver jwt-cpp::jwt-cpp Threads::Threads asio::asio)
+target_link_libraries(main PRIVATE ioteyeserver jwt-cpp::jwt-cpp nlohmann_json::nlohmann_json Threads::Threads asio::asio)
 
 # Conditional inclusion of client project
 if(IOTEYE_BUILD_CLIENT)

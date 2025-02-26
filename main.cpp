@@ -2,6 +2,7 @@
 #include <ioteyeserver.hpp>
 
 #include "adminOptions.h"
+#include "file_handler.h"
 #include "functional.h"
 #include "serverResources.h"
 
@@ -10,8 +11,12 @@ using std::endl;
 
 std::unique_ptr<AdminOptions> OPTIONS = std::make_unique<AdminOptions>();
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     OPTIONS->init(argc, argv);
+    // Load devices from file
+    if (!ioteye::FileHandler::loadDevices(s_idDeviceMap, "devices.json"))
+        std::cout << "Failed to load devices from file." << std::endl;
+
     auto pins = std::make_shared<PinsResource>();
     auto devices = std::make_shared<DeviceResource>();
     ioteye::Webserver ws =
@@ -34,6 +39,13 @@ int main(int argc, char **argv) {
             ws.shutdown();
             break;
         }
+        if (key == 'm') {
+            std::cout << s_idDeviceMap.size() << std::endl;
+        }
+    }
+    // Save devices to file
+    if (!ioteye::FileHandler::saveDevices(s_idDeviceMap, "devices.json")) {
+        std::cout << "Failed to save devices to file." << std::endl;
     }
     return 0;
 }

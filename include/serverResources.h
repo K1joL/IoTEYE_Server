@@ -28,8 +28,7 @@ enum COMMANDS {
 };
 }
 
-using DevicePtr = std::shared_ptr<ioteye::Device>;
-static std::unordered_map<uint64_t, DevicePtr> s_idDeviceMap;
+extern std::unordered_map<uint64_t, DevicePtr> s_idDeviceMap;
 
 using DeviceIter = std::unordered_map<uint64_t, DevicePtr>::iterator;
 uint16_t authCheck(const std::string& token, DeviceIter& deviceIter);
