@@ -46,7 +46,7 @@ set(SRC_LIST
     src/functional.cpp
     src/serverResources.cpp
     src/device.cpp
-    src/file_handler.cpp)
+    src/file_manager.cpp)
     
     # --- Fetch jwt-cpp ---
     include(FetchContent)

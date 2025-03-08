@@ -25,7 +25,7 @@
 #include <ioteyeserver.hpp>
 
 #include "adminOptions.h"
-#include "file_handler.h"
+#include "file_manager.h"
 #include "functional.h"
 #include "serverResources.h"
 
@@ -37,8 +37,19 @@ std::unique_ptr<AdminOptions> OPTIONS = std::make_unique<AdminOptions>();
 int main(int argc, char** argv) {
     OPTIONS->init(argc, argv);
     // Load devices from file
-    if (!ioteye::FileHandler::loadDevices(s_idDeviceMap, "devices.json"))
-        std::cout << "Failed to load devices from file." << std::endl;
+    try {
+        auto devicesJsonHandler = std::make_shared<ioteye::FileHandler>(
+            "devices.json", std::ios::in | std::ios::out);
+        ioteye::DeviceFileManager deviceJsonManager(devicesJsonHandler,
+                                                    s_idDeviceMap);
+        if (!deviceJsonManager.loadFile())
+            std::cout << "Failed to load devices from file." << std::endl;
+    } catch (std::runtime_error& e) {
+        std::cerr << e.what() << "\nDevice information will not be loaded!"
+                  << std::endl;
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+    }
 
     auto pins = std::make_shared<PinsResource>();
     auto devices = std::make_shared<DeviceResource>();
@@ -47,12 +58,17 @@ int main(int argc, char** argv) {
             .setTcpPort(8080)
             .setUdpOn()
             .setUdpPort(8081)
-            .setResource("/devices/{token}/pins/{pinNumber}/{dataType}/{defValue}/{cmd}", pins)  // CREATE PIN
-            .setResource("/devices/{token}/pins/{pinNumber}/{cmd}", pins)          // GET PIN && DELETE PIN
-            .setResource("/devices/{token}/pins/{pinNumber}/{value}/{cmd}", pins)  // UPDATE PIN
-            .setResource("/devices/{cmd}", devices)                                // REGISTER DEVICE
-            .setResource("/devices/{token}/{cmd}",
-                         devices)  // GET DEVICE STATUS && UPDATE DEVICE && DELETE DEVICE
+            .setResource(
+                "/devices/{token}/pins/{pinNumber}/{dataType}/{defValue}/{cmd}",
+                pins)  // CREATE PIN
+            .setResource("/devices/{token}/pins/{pinNumber}/{cmd}",
+                         pins)  // GET PIN && DELETE PIN
+            .setResource("/devices/{token}/pins/{pinNumber}/{value}/{cmd}",
+                         pins)                       // UPDATE PIN
+            .setResource("/devices/{cmd}", devices)  // REGISTER DEVICE
+            .setResource(
+                "/devices/{token}/{cmd}",
+                devices)  // GET DEVICE STATUS && UPDATE DEVICE && DELETE DEVICE
             .build();
     ws.start();
     char key;
@@ -67,8 +83,18 @@ int main(int argc, char** argv) {
         }
     }
     // Save devices to file
-    if (!ioteye::FileHandler::saveDevices(s_idDeviceMap, "devices.json")) {
-        std::cout << "Failed to save devices to file." << std::endl;
+    try {
+        auto devicesJsonHandler = std::make_shared<ioteye::FileHandler>(
+            "devices.json", std::ios::in | std::ios::out);
+        ioteye::DeviceFileManager deviceJsonManager(devicesJsonHandler,
+                                                    s_idDeviceMap);
+        if (!deviceJsonManager.saveFile())
+            std::cout << "Failed to save device information." << std::endl;
+    } catch (std::runtime_error& e) {
+        std::cerr << e.what() << "\nDevice information will not be saved!"
+                  << std::endl;
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
     }
     return 0;
 }

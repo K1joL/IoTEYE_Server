@@ -37,18 +37,15 @@
 namespace ioteye {
 using ms = std::chrono::milliseconds;
 
-// Forward declarartion. Full Declaration in file_hanlder.h
-class FileHandler;
-
 // Forward declaration. For using.
 class Device;
 using DevicePtr = std::shared_ptr<ioteye::Device>;
 
 class Device {
-    friend class FileHandler;
     class StateTimer {
     public:
-        StateTimer(std::function<void(uint8_t)> callback, std::shared_ptr<std::mutex> mutex);
+        StateTimer(std::function<void(uint8_t)> callback,
+                   std::shared_ptr<std::mutex> mutex);
         void threadLoop();
         void ping();
         void setPingFalse();
@@ -69,8 +66,8 @@ class Device {
         std::function<void(uint8_t)> m_cbChangeState;
         std::atomic<bool> m_isStopped{false};
     };
-
-private:
+    
+public:
     class Builder {
     public:
         Builder();
@@ -85,9 +82,12 @@ private:
         Builder& setStringPin(uint16_t pinNumber, const std::string& value);
         Builder& setPinsTypePin(uint16_t pinNumber, uint8_t value);
         Builder& setIntPinMap(std::unordered_map<uint16_t, int>&& intPinMap);
-        Builder& setDoublePinMap(std::unordered_map<uint16_t, double>&& doublePinMap);
-        Builder& setStringPinMap(std::unordered_map<uint16_t, std::string>&& stringPinMap);
-        Builder& setPinsTypeMap(std::unordered_map<uint16_t, uint8_t>&& pinsTypeMap);
+        Builder& setDoublePinMap(
+            std::unordered_map<uint16_t, double>&& doublePinMap);
+        Builder& setStringPinMap(
+            std::unordered_map<uint16_t, std::string>&& stringPinMap);
+        Builder& setPinsTypeMap(
+            std::unordered_map<uint16_t, uint8_t>&& pinsTypeMap);
 
         Device build();
 
@@ -122,30 +122,21 @@ public:
     ~Device();
 
     // Virtual pins interactions
-    int addPin(uint16_t pinNumber, const std::string& dataType, const std::string& defaultData);
+    int addPin(uint16_t pinNumber, const std::string& dataType,
+               const std::string& defaultData);
     int changePin(uint16_t pinNumber, const std::string& data);
     int removePin(uint16_t pinNumber);
     std::string getPin(uint16_t pinNumber);
-    uint16_t pinsCreated() {
-        return m_pinsCounter;
-    };
-
+    uint16_t pinsCreated();
+    uint16_t getMaxPins();
     // Getters for pins maps
-     const std::unordered_map<uint16_t, uint8_t>& getPinsTypes() const {
-        return m_pinsType;
-    }
-    const std::unordered_map<uint16_t, int>& getIntPins() const {
-        return m_intPins;
-    }
+    const std::unordered_map<uint16_t, uint8_t>& getPinsTypes() const;
+    const std::unordered_map<uint16_t, int>& getIntPins() const;
+    const std::unordered_map<uint16_t, double>& getDoublePins() const;
+    const std::unordered_map<uint16_t, std::string>& getStringPins() const;
 
-    const std::unordered_map<uint16_t, double>& getDoublePins() const {
-        return m_doublePins;
-    }
-
-    const std::unordered_map<uint16_t, std::string>& getStringPins() const {
-        return m_stringPins;
-    }
-
+    // Virtual pins data type IDs
+    enum ContainerID { INTID = 105, DOUBLEID = 100, STRINGID = 115 };
 private:
     static uint64_t m_idSequence;
     uint64_t m_id;
@@ -154,8 +145,6 @@ private:
     std::shared_ptr<std::mutex> m_timerMutex;
     std::shared_ptr<StateTimer> m_stateTimer;
 
-    // Virtual pins data type IDs
-    enum ContainerID { INTID = 105, DOUBLEID = 100, STRINGID = 115 };
 
     // Virtual pins data
     std::unordered_map<uint16_t, uint8_t> m_pinsType;
