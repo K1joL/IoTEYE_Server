@@ -16,7 +16,7 @@ IoTeye Server App is an advanced usage example of the [IoTeye Server Library](ht
 1. **Clone the repository**:
    ```sh
    git clone https://github.com/K1joL/IoTeyeServerApp
-   cd IoTeyeHttpServer
+   cd IoTeyeServerApp
    ```
 
 2. **Build the project**:
