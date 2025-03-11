@@ -37,12 +37,14 @@ std::unique_ptr<AdminOptions> OPTIONS = std::make_unique<AdminOptions>();
 int main(int argc, char** argv) {
     OPTIONS->init(argc, argv);
     // Load devices from file
+    std::shared_ptr<ioteye::FileHandler> devicesJsonHandler;
+    std::shared_ptr<ioteye::DeviceFileManager> deviceJsonManager;
     try {
-        auto devicesJsonHandler = std::make_shared<ioteye::FileHandler>(
+        devicesJsonHandler = std::make_shared<ioteye::FileHandler>(
             "devices.json", std::ios::in | std::ios::out);
-        ioteye::DeviceFileManager deviceJsonManager(devicesJsonHandler,
-                                                    s_idDeviceMap);
-        if (!deviceJsonManager.loadFile())
+        deviceJsonManager = std::make_shared<ioteye::DeviceFileManager>(
+            devicesJsonHandler, s_idDeviceMap);
+        if (!deviceJsonManager->loadFile())
             std::cout << "Failed to load devices from file." << std::endl;
     } catch (std::runtime_error& e) {
         std::cerr << e.what() << "\nDevice information will not be loaded!"
@@ -84,11 +86,13 @@ int main(int argc, char** argv) {
     }
     // Save devices to file
     try {
-        auto devicesJsonHandler = std::make_shared<ioteye::FileHandler>(
-            "devices.json", std::ios::in | std::ios::out);
-        ioteye::DeviceFileManager deviceJsonManager(devicesJsonHandler,
-                                                    s_idDeviceMap);
-        if (!deviceJsonManager.saveFile())
+        if (devicesJsonHandler == nullptr)
+            devicesJsonHandler = std::make_shared<ioteye::FileHandler>(
+                "devices.json", std::ios::in | std::ios::out);
+        if (deviceJsonManager == nullptr)
+            deviceJsonManager = std::make_shared<ioteye::DeviceFileManager>(
+                devicesJsonHandler, s_idDeviceMap);
+        if (!deviceJsonManager->saveFile())
             std::cout << "Failed to save device information." << std::endl;
     } catch (std::runtime_error& e) {
         std::cerr << e.what() << "\nDevice information will not be saved!"
