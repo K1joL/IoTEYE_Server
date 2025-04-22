@@ -25,6 +25,7 @@
 #define IOTEYE_FUNCTIONAL_H
 
 #include <string>
+#include <mutex>
 #ifdef ENABLE_LOGGING
 #include <iostream>
 #include <sstream>
@@ -37,8 +38,11 @@ uint8_t GetCommandCode(const std::string &cmd);
 
 namespace ioteye::server::debug {
 #ifdef ENABLE_LOGGING
+static std::mutex logMutex;
+
 template <typename... Args>
 inline void log(Args &&...args) {
+    std::lock_guard<std::mutex> lock(logMutex);
     std::ostringstream oss;
     (oss << ... << std::forward<Args>(args));
     std::cout << "LOG: " << oss.str() << std::endl;

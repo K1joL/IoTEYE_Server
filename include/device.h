@@ -36,7 +36,7 @@
 
 namespace ioteye {
 using ms = std::chrono::milliseconds;
-
+using chronoClock = std::chrono::high_resolution_clock;
 // Forward declaration. For using.
 class Device;
 using DevicePtr = std::shared_ptr<ioteye::Device>;
@@ -44,29 +44,31 @@ using DevicePtr = std::shared_ptr<ioteye::Device>;
 class Device {
     class StateTimer {
     public:
-        StateTimer(std::function<void(uint8_t)> callback,
-                   std::shared_ptr<std::mutex> mutex);
+        StateTimer(std::function<void(uint8_t)> callback, std::mutex& mutex);
+        ~StateTimer();
         void threadLoop();
         void ping();
         void setPingFalse();
         bool wasPing();
         void stop();
         void setDelays(ms outdatedDelay, ms offlineDelay);
-        ms getRemainingTime();
-        ~StateTimer() {
-            stop();
-        }
+        ms getRemainingTime() const;
+        bool isStopped() const;
+        void changeState(uint8_t newState);
 
     private:
         std::atomic<bool> m_wasPing{false};
-        std::shared_ptr<std::mutex> m_changingMutex;
+        std::mutex& m_changingMutex;
         ms m_outdatedDelay = ms(500);
         ms m_offlineDelay = ms(1000);
-        std::chrono::high_resolution_clock::time_point m_start;
+        chronoClock::time_point m_start = chronoClock::now();
         std::function<void(uint8_t)> m_cbChangeState;
         std::atomic<bool> m_isStopped{false};
+        std::thread m_timerThread;
+        // TODO: make currentState be set to the default value
+        uint8_t m_currentState = OFFLINE;
     };
-    
+
 public:
     class Builder {
     public:
@@ -137,14 +139,14 @@ public:
 
     // Virtual pins data type IDs
     enum ContainerID { INTID = 105, DOUBLEID = 100, STRINGID = 115 };
+
 private:
     static uint64_t m_idSequence;
     uint64_t m_id;
     std::string m_token;
     std::atomic<uint8_t> m_state{OFFLINE};
-    std::shared_ptr<std::mutex> m_timerMutex;
+    std::mutex m_timerMutex;
     std::shared_ptr<StateTimer> m_stateTimer;
-
 
     // Virtual pins data
     std::unordered_map<uint16_t, uint8_t> m_pinsType;

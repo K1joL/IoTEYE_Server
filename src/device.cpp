@@ -28,46 +28,37 @@ namespace ioteye {
 using namespace server::debug;
 
 Device::StateTimer::StateTimer(std::function<void(uint8_t)> callback,
-                               std::shared_ptr<std::mutex> mutex)
+                               std::mutex& mutex)
     : m_changingMutex(mutex), m_cbChangeState{callback}, m_isStopped(false) {
-    std::thread([this]() { threadLoop(); }).detach();
+    m_timerThread = std::thread([this]() { threadLoop(); });
 }
 
-// TODO: Rewrite loop fucntion with Finite-state machine
 void Device::StateTimer::threadLoop() {
-    while (m_isStopped) {
-        // std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        if (m_wasPing || m_isStopped) {
+    while (!m_isStopped) {
+        if (m_wasPing) {
+            m_start = chronoClock::now();
             m_wasPing = false;
-            m_start = std::chrono::high_resolution_clock::now();
-            while (std::chrono::high_resolution_clock::now() - m_start <
-                   m_outdatedDelay) {
-                // std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                if (m_wasPing || m_isStopped)
-                    break;
-            }
-            // set state = online
-            if (m_wasPing) {
-                m_cbChangeState(Device::ONLINE);
-                m_wasPing = false;
-                continue;
-            }
-            // set state = outdated
-            m_cbChangeState(Device::OUTDATED);
-            m_start = std::chrono::high_resolution_clock::now();
-            while (std::chrono::high_resolution_clock::now() - m_start <
-                   m_offlineDelay) {
-                // std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                if (m_wasPing || m_isStopped)
-                    break;
-            }
-            if (m_wasPing) {
-                m_cbChangeState(Device::ONLINE);
-                m_wasPing = false;
-                continue;
-            }
-            // set state = offline
-            m_cbChangeState(Device::OFFLINE);
+            changeState(STATES::ONLINE);
+        }
+
+        auto now = chronoClock::now();
+        auto elapsed = now - m_start;
+
+        switch (m_currentState) {
+            case STATES::ONLINE:
+                if (std::chrono::duration_cast<ms>(elapsed) >=
+                    m_outdatedDelay) {
+                    changeState(OUTDATED);
+                }
+                break;
+            case STATES::OUTDATED:
+                if (std::chrono::duration_cast<ms>(elapsed) >= m_offlineDelay) {
+                    changeState(OFFLINE);
+                }
+                break;
+            case STATES::OFFLINE:
+                // Do nothing while waiting for the ping
+                break;
         }
     }
 }
@@ -89,18 +80,33 @@ void Device::StateTimer::stop() {
 }
 
 void Device::StateTimer::setDelays(ms outdatedDelay, ms offlineDelay) {
-    m_changingMutex->lock();
+    std::lock_guard<std::mutex> lock(m_changingMutex);
     m_outdatedDelay = outdatedDelay;
     m_offlineDelay = offlineDelay;
-    m_changingMutex->unlock();
 }
 
-ms Device::StateTimer::getRemainingTime() {
-    ms temp(0);
-    m_changingMutex->lock();
-    temp = ms((std::chrono::high_resolution_clock::now() - m_start).count());
-    m_changingMutex->unlock();
-    return temp;
+ms Device::StateTimer::getRemainingTime() const {
+    auto now = chronoClock::now();
+    auto elapsed = now - m_start;
+    auto remaining = m_offlineDelay - std::chrono::duration_cast<ms>(elapsed);
+    return (remaining > ms(0)) ? remaining : ms(0);
+}
+
+bool Device::StateTimer::isStopped() const {
+    return m_isStopped;
+}
+
+void Device::StateTimer::changeState(uint8_t newState) {
+    m_currentState = newState;
+    std::lock_guard<std::mutex> lock(m_changingMutex);
+    m_cbChangeState(newState);
+}
+
+Device::StateTimer::~StateTimer() {
+    // log("StateTimer desctructor");
+    stop();
+    if (m_timerThread.joinable())
+        m_timerThread.join();
 }
 
 uint64_t Device::m_idSequence = 1;
@@ -108,7 +114,6 @@ uint64_t Device::m_idSequence = 1;
 Device::Device() {
     m_id = m_idSequence;
     m_idSequence++;
-    m_timerMutex = std::make_shared<std::mutex>();
     m_stateTimer = std::make_shared<StateTimer>(
         std::bind(&Device::changeState, this, std::placeholders::_1),
         m_timerMutex);
@@ -146,7 +151,6 @@ Device& Device::operator=(Device&& other) noexcept {
         m_stringPins = std::move(other.m_stringPins);
         m_pinsCounter = other.m_pinsCounter;
         m_maxPins = other.m_maxPins;
-        m_timerMutex = std::make_shared<std::mutex>();
         m_stateTimer = std::make_shared<StateTimer>(
             std::bind(&Device::changeState, this, std::placeholders::_1),
             m_timerMutex);
@@ -175,13 +179,14 @@ uint8_t Device::getState() {
 }
 
 void Device::changeState(uint8_t state) {
-    m_state = state;
+    if (state != m_state) {
+        m_state = state;
+        // log("Changed State to ", char(state + 48));
+    }
 }
 
 Device::~Device() {
-    m_stateTimer->stop();
-    // delete m_timerMutex;
-    // delete m_stateTimer;
+    // log("device desctructor");
 }
 
 int Device::addPin(uint16_t pinNumber, const std::string& dataType,
