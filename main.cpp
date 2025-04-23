@@ -60,17 +60,19 @@ int main(int argc, char** argv) {
             .setTcpPort(8080)
             .setUdpOn()
             .setUdpPort(8081)
+            // CREATE PIN
             .setResource(
                 "/devices/{token}/pins/{pinNumber}/{dataType}/{defValue}/{cmd}",
-                pins)  // CREATE PIN
-            .setResource("/devices/{token}/pins/{pinNumber}/{cmd}",
-                         pins)  // GET PIN && DELETE PIN
+                pins)
+            // GET PIN or DELETE PIN
+            .setResource("/devices/{token}/pins/{pinNumber}/{cmd}", pins)
+            // UPDATE PIN
             .setResource("/devices/{token}/pins/{pinNumber}/{value}/{cmd}",
-                         pins)                       // UPDATE PIN
-            .setResource("/devices/{cmd}", devices)  // REGISTER DEVICE
-            .setResource(
-                "/devices/{token}/{cmd}",
-                devices)  // GET DEVICE STATUS && UPDATE DEVICE && DELETE DEVICE
+                         pins)
+            // REGISTER DEVICE
+            .setResource("/devices/{cmd}", devices)
+            // GET DEVICE STATUS or UPDATE DEVICE STATUS or DELETE DEVICE
+            .setResource("/devices/{token}/{cmd}", devices)
             .build();
     ws.start();
     char key;
