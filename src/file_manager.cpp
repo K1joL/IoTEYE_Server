@@ -106,15 +106,7 @@ bool DeviceFileManager::loadFile() {
 }
 
 FileHandler::~FileHandler() {
-    {
-        std::lock_guard<std::mutex> lock(m_queueMutex);
-        m_shutdown = true;              // Signal the worker thread to stop
-        m_queueCondition.notify_all();  // Wake up the worker thread
-    }
-    m_fileThread.join();  // Wait for the worker thread to finish
-    // Close the file stream
-    if (m_fileStream.is_open())
-        m_fileStream.close();
+    closeFile();
 }
 
 void FileHandler::writeAsync(const std::string& line) {
@@ -126,7 +118,7 @@ void FileHandler::writeAsync(const std::string& line) {
 bool FileHandler::writeSync(const std::string& line) {
     std::lock_guard<std::mutex> lock(m_fileMutex);
     if (m_fileStream.is_open()) {
-        m_fileStream << line << std::endl;
+        m_fileStream << line;
         return m_fileStream.good();
     }
     return false;
@@ -134,10 +126,29 @@ bool FileHandler::writeSync(const std::string& line) {
 
 bool FileHandler::readLine(std::string& line) {
     std::lock_guard<std::mutex> lock(m_fileMutex);
+
+    m_fileStream.clear();
+    // Save the current file pointer position
+    auto originalPos = m_fileStream.tellg();
+
+    // Move to the current read pos of the file
+    m_fileStream.seekg(m_currentReadPos);
+
     if (m_fileStream.is_open() && std::getline(m_fileStream, line)) {
+        m_currentReadPos = m_fileStream.tellg();
         return true;
+    } else {
+        // Handle errors and EOF
+        if (m_fileStream.eof()) {
+            // Reset position
+            m_currentReadPos = 0;
+            return false;  // EOF reached
+        } else {
+            std::cerr << "Error reading line in readLineStaticPosition."
+                      << std::endl;
+            return false;  // Error occurred
+        }
     }
-    return false;
 }
 
 bool FileHandler::readAll(std::string& content) {
@@ -148,12 +159,39 @@ bool FileHandler::readAll(std::string& content) {
     m_fileStream.seekg(0, std::ios::beg);
     // Read the entire file
     content = std::string((std::istreambuf_iterator<char>(m_fileStream)),
-                        std::istreambuf_iterator<char>());
+                          std::istreambuf_iterator<char>());
     // Restore the original file pointer position
     m_fileStream.seekg(originalPos);
 
     return m_fileStream.good();
 }
+
+void FileHandler::closeFile() {
+    {
+        std::lock_guard<std::mutex> lock(m_queueMutex);
+        m_shutdown = true;              // Signal the worker thread to stop
+        m_queueCondition.notify_all();  // Wake up the worker thread
+    }
+    m_fileThread.join();  // Wait for the worker thread to finish
+    // Close the file stream
+    if (m_fileStream.is_open())
+        m_fileStream.close();
+}
+
+void FileHandler::openFile(const std::string& filename,
+                           std::ios_base::openmode mode) {
+    if (filename.empty())
+        throw std::invalid_argument("File path cannot be empty!");
+    m_fileStream.open(m_filename, mode);
+    if (!m_fileStream.is_open())
+        throw std::runtime_error("Failed to open file: " + m_filename);
+    m_fileThread = std::thread(&FileHandler::fileWorker, this);
+}
+
+void FileHandler::openFile(const std::string& filename) {
+    openFile(filename, m_mode);
+}
+
 void FileHandler::fileWorker() {
     while (true) {
         std::string line;
@@ -177,7 +215,7 @@ void FileHandler::fileWorker() {
         // Perform the file I/O operation
         if (!line.empty()) {
             std::lock_guard<std::mutex> lock(m_fileMutex);
-            m_fileStream << line << std::endl;
+            m_fileStream << line;
             if (!m_fileStream.good()) {
                 std::cerr << "Failed to write to file: " << m_filename
                           << std::endl;

@@ -42,12 +42,7 @@ class FileHandler {
 public:
     FileHandler(const std::string& filename, std::ios_base::openmode mode)
         : m_filename(filename), m_mode(mode) {
-        if (filename.empty())
-            throw std::invalid_argument("File path cannot be empty!");
-        m_fileStream.open(m_filename, m_mode);
-        if (!m_fileStream.is_open())
-            throw std::runtime_error("Failed to open file: " + m_filename);
-        m_fileThread = std::thread(&FileHandler::fileWorker, this);
+        openFile(filename, mode);
     }
 
     ~FileHandler();
@@ -55,6 +50,9 @@ public:
     bool writeSync(const std::string& line);
     bool readLine(std::string& line);
     bool readAll(std::string& content);
+    void closeFile();
+    void openFile(const std::string& filename, std::ios_base::openmode mode);
+    void openFile(const std::string& filename);
 
 private:
     void fileWorker();
@@ -68,6 +66,7 @@ private:
     std::condition_variable m_queueCondition;
     bool m_shutdown = false;
     std::fstream m_fileStream;
+    std::streampos m_currentReadPos = 0;
 };
 
 class IFileManager {
