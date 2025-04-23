@@ -359,18 +359,21 @@ Device::Builder& Device::Builder::setState(uint8_t state) {
 
 Device::Builder& Device::Builder::setIntPin(uint16_t pinNumber, int value) {
     m_intPins[pinNumber] = value;
+    setPinsTypePin(pinNumber, INTID);
     return *this;
 }
 
 Device::Builder& Device::Builder::setDoublePin(uint16_t pinNumber,
                                                double value) {
     m_doublePins[pinNumber] = value;
+    setPinsTypePin(pinNumber, DOUBLEID);
     return *this;
 }
 
 Device::Builder& Device::Builder::setStringPin(uint16_t pinNumber,
                                                const std::string& value) {
     m_stringPins[pinNumber] = value;
+    setPinsTypePin(pinNumber, STRINGID);
     return *this;
 }
 
@@ -407,7 +410,8 @@ Device::Builder& Device::Builder::setPinsTypeMap(
 Device Device::Builder::build() {
     Device device(m_outdatedDelay, m_offlineDelay, m_maxPins);
     device.m_id = m_id;
-    device.m_token = m_token;
+    if (!m_token.empty())
+        device.m_token = m_token;
     device.m_state = m_state;
     device.m_intPins = m_intPins;
     device.m_doublePins = m_doublePins;
