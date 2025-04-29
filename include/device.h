@@ -45,6 +45,8 @@ class Device {
     class StateTimer {
     public:
         StateTimer(std::function<void(uint8_t)> callback, std::mutex& mutex);
+        StateTimer(std::function<void(uint8_t)> callback, std::mutex& mutex,
+                   ms offlineDelay, ms outdatedDelay);
         ~StateTimer();
         void threadLoop();
         void ping();
@@ -55,6 +57,8 @@ class Device {
         ms getRemainingTime() const;
         bool isStopped() const;
         void changeState(uint8_t newState);
+        ms getOfflineDelay();
+        ms getOutdatedDelay();
 
     private:
         std::atomic<bool> m_wasPing{false};

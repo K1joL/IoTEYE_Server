@@ -33,6 +33,14 @@ Device::StateTimer::StateTimer(std::function<void(uint8_t)> callback,
     m_timerThread = std::thread([this]() { threadLoop(); });
 }
 
+Device::StateTimer::StateTimer(std::function<void(uint8_t)> callback,
+                               std::mutex& mutex, ms offlineDelay,
+                               ms outdatedDelay)
+    : StateTimer(callback, mutex) {
+    m_offlineDelay = offlineDelay;
+    m_outdatedDelay = outdatedDelay;
+}
+
 void Device::StateTimer::threadLoop() {
     while (!m_isStopped) {
         if (m_wasPing) {
@@ -102,6 +110,14 @@ void Device::StateTimer::changeState(uint8_t newState) {
     m_cbChangeState(newState);
 }
 
+ms Device::StateTimer::getOfflineDelay() {
+    return m_offlineDelay;
+}
+
+ms Device::StateTimer::getOutdatedDelay() {
+    return m_outdatedDelay;
+}
+
 Device::StateTimer::~StateTimer() {
     // log("StateTimer desctructor");
     stop();
@@ -137,7 +153,8 @@ Device::Device(Device&& other) noexcept
       m_maxPins(other.m_maxPins) {
     m_stateTimer = std::make_shared<StateTimer>(
         std::bind(&Device::changeState, this, std::placeholders::_1),
-        m_timerMutex);
+        m_timerMutex, other.m_stateTimer->getOfflineDelay(),
+        other.m_stateTimer->getOutdatedDelay());
     m_idSequence = other.m_id + 1;
 }
 
@@ -153,7 +170,8 @@ Device& Device::operator=(Device&& other) noexcept {
         m_maxPins = other.m_maxPins;
         m_stateTimer = std::make_shared<StateTimer>(
             std::bind(&Device::changeState, this, std::placeholders::_1),
-            m_timerMutex);
+            m_timerMutex, other.m_stateTimer->getOfflineDelay(),
+            other.m_stateTimer->getOutdatedDelay());
         m_idSequence = other.m_id + 1;
     }
     return *this;
