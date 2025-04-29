@@ -53,7 +53,7 @@ public:
             "\n";
 
         int result;
-        while ((result = getopt_long(argc, argv, "t:s:p:", long_options, nullptr)) != -1) {
+        while ((result = getopt_long(argc, argv, "p:d:f:", long_options, nullptr)) != -1) {
             switch (result) {
                 case 'p':
                     m_maxPinsOpt = atoi(optarg);
