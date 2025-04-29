@@ -6,6 +6,8 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 
+#include "adminOptions.h"
+
 #ifdef _WIN32
 #include <io.h>  // For _mktemp_s
 #else
@@ -14,6 +16,8 @@
 
 #include "device.h"
 
+
+std::unique_ptr<AdminOptions> OPTIONS = std::make_unique<AdminOptions>();
 using json = nlohmann::json;
 
 namespace ioteye {
