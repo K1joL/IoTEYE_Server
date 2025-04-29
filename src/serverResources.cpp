@@ -270,11 +270,6 @@ std::shared_ptr<HttpResponse> DeviceResource::renderGET(
                 HttpStatusCode::OK,
                 "devStatus=" + std::to_string(deviceStatus));
             break;
-        case ioteye::DEVICE_STATUS_UPDATE:
-            device->second->ping();
-            return std::make_shared<HttpResponse>(HttpStatusCode::OK,
-                                                  "Device status updated!");
-            break;
         default:
             return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
                                                   "Wrong command!");
