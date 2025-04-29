@@ -22,6 +22,7 @@
 */
 
 #include "file_manager.h"
+#include "adminOptions.h"
 
 using json = nlohmann::json;
 
@@ -91,6 +92,8 @@ bool DeviceFileManager::loadFile() {
                                          .setDoublePinMap(std::move(doublePins))
                                          .setStringPinMap(std::move(stringPins))
                                          .setPinsTypeMap(std::move(pinsType))
+                                         .setOfflineDelay(OPTIONS->getOfflineDelay())
+                                         .setOutdatedDelay(OPTIONS->getOutdatedDelay())
                                          .build());
         // Initialize other relevant data if necessary
         auto emplaceIt = m_devicesMap.emplace(newDevice->getID(), newDevice);
