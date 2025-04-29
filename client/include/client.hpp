@@ -48,6 +48,7 @@ public:
 
     std::string registerNewDevice();
     uint16_t getDeviceStatus(const std::string& token);
+    uint16_t updateDeviceStatus(const std::string& token);
     uint16_t deleteDevice(const std::string& token);
     uint16_t createVirtualPin(const std::string& token, const std::string& pinNumber,
                               const std::string& dataType, const std::string& defaultData);

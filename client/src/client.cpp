@@ -45,8 +45,8 @@ Response Client::sendRequest(uint8_t method, const std::string &endpoint) {
         requestStream << "\r\n";
         std::string request = requestStream.str();
         std::string response = sendTcpRequest(request, m_endpoints);
-        std::cout << "Response: " << response << std::endl;
-
+        std::cout << "Response: \n" << response << std::endl;
+        std::cout << "End of response." << std::endl;
         return parseHttpResponse(response);
 
     } catch (const std::exception &e) {
@@ -210,6 +210,14 @@ uint16_t Client::getDeviceStatus(const std::string &token) {
     }
 
     return response.statusCode;
+}
+
+uint16_t Client::updateDeviceStatus(const std::string &token) {
+        std::string endpoint = "/devices";
+    endpoint += '/' + token;
+    endpoint += DEVICE_STATUS_UPDATE;
+
+    return sendRequest(PUT, endpoint).statusCode;
 }
 
 uint16_t Client::deleteDevice(const std::string &token) {
