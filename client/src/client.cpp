@@ -45,12 +45,12 @@ Response Client::sendRequest(uint8_t method, const std::string &endpoint) {
         requestStream << "\r\n";
         std::string request = requestStream.str();
         std::string response = sendTcpRequest(request, m_endpoints);
-        std::cout << "Response: \n" << response << std::endl;
-        std::cout << "End of response." << std::endl;
+        ioteye::client::debug::log("Response: \n", response, "\nend.");
+
         return parseHttpResponse(response);
 
     } catch (const std::exception &e) {
-        std::cerr << "Exception in sendRequest: " << e.what() << std::endl;
+        // std::cerr << "Exception in sendRequest: " << e.what() << std::endl;
         return Response{"", "", 0};
     }
 }
@@ -179,7 +179,6 @@ std::string Client::registerNewDevice() {
     if (response.statusCode == 0)
         return "";
     if (!response.body.empty()) {
-        std::cout << "Register Response: " << response.body << std::endl;
         std::string token = extractValue(response.body, "token");
         return token;
     }
@@ -195,12 +194,10 @@ uint16_t Client::getDeviceStatus(const std::string &token) {
     if (response.statusCode == 0)
         return 0;
     if (!response.body.empty()) {
-        std::cout << "Status Response: " << response.body << std::endl;
         std::string statusStr = extractValue(response.body, "devStatus");
         if (!statusStr.empty()) {
             try {
                 uint16_t status = std::stoi(statusStr);
-                std::cout << "Device is " << status << std::endl;
                 return status;
             } catch (const std::invalid_argument &e) {
                 std::cerr << "Error when getting status: " << response.body << std::endl;

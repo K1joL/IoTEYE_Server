@@ -39,7 +39,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 option(IOTEYE_BUILD_CLIENT "Build the client application" OFF)
-option(IOTEYE_ENABLE_TESTS "Enable tests compilation" OFF)
+option(IOTEYE_SERVER_ENABLE_TESTS "Enable tests compilation" OFF)
 
 include_directories("include/")
 
@@ -81,7 +81,7 @@ if(IOTEYE_BUILD_CLIENT)
     add_subdirectory(client)
 endif()
 
-if(IOTEYE_ENABLE_TESTS)
+if(IOTEYE_SERVER_ENABLE_TESTS)
 
     if(MSVC)
         message(WARNING "Tests cannot be built with MSVC!")

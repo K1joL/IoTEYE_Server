@@ -29,6 +29,8 @@
 #include <sstream>
 #include <string>
 
+#include "functional.h"
+
 namespace ioteye {
 using asio::ip::tcp;
 

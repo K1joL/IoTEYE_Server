@@ -33,9 +33,9 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Conditionally add logging definitions
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    message(STATUS "Logging enabled!")
-    add_compile_definitions(IoTeyeDEBUG)
+if(IOTEYE_CLIENT_ENABLE_LOGGING)
+    message(STATUS "Client Logging enabled!")
+    add_compile_definitions(IOTEYE_CLIENT_ENABLE_LOGGING)
 endif()
 
 include_directories("include/")
@@ -49,3 +49,9 @@ find_package(asio REQUIRED)
 
 add_executable(${PROJECT_NAME} client_main.cpp ${SRC_LIST})
 target_link_libraries(${PROJECT_NAME} PRIVATE ioteyeserver asio::asio)
+
+if(IOTEYE_CLIENT_ENABLE_TESTS)
+    message(STATUS "Client tests compilation is ON!")  
+    add_executable(client_test tests/performance_test.cpp ${SRC_LIST})
+    target_link_libraries(client_test PRIVATE ioteyeserver asio::asio)
+endif()
