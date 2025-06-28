@@ -37,7 +37,7 @@ std::shared_ptr<HttpResponse> PinsResource::renderPOST(const HttpRequest &req) {
     uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
     std::string dataType{req.getArg("dataType")};
     std::string token{req.getArg("token")};
-    std::string value{req.getArg("defValue")};
+    std::string value{req.getArg("value")};
     std::string cmd{req.getArg("cmd")};
     std::string content = "PinValue=";
 

@@ -62,17 +62,18 @@ int main(int argc, char** argv) {
             .setUdpPort(8081)
             // CREATE PIN
             .setResource(
-                "/devices/{token}/pins/{pinNumber}/{dataType}/{defValue}/{cmd}",
-                pins)
+                "/devices/{token}/pins/{cmd}/{pinNumber}/{dataType}/{value}",
+                pins, "cp")
             // GET PIN or DELETE PIN
-            .setResource("/devices/{token}/pins/{pinNumber}/{cmd}", pins)
+            .setResource("/devices/{token}/pins/{cmd}/{pinNumber}", pins,
+                         "pv,dp")
             // UPDATE PIN
-            .setResource("/devices/{token}/pins/{pinNumber}/{value}/{cmd}",
-                         pins)
+            .setResource("/devices/{token}/pins/{cmd}/{pinNumber}/{value}",
+                         pins, "up")
             // REGISTER DEVICE
-            .setResource("/devices/{cmd}", devices)
+            .setResource("/devices/{cmd}", devices, "rd")
             // GET DEVICE STATUS or UPDATE DEVICE STATUS or DELETE DEVICE
-            .setResource("/devices/{token}/{cmd}", devices)
+            .setResource("/devices/{token}/{cmd}", devices, "ds,us,dd")
             .build();
     ws.start();
     char key;
