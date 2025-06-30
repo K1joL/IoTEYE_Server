@@ -24,68 +24,40 @@
 #ifndef ADMIN_OPTIONS_H
 #define ADMIN_OPTIONS_H
 
-#include <getopt.h>
-
+#include <boost/program_options.hpp>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <unordered_map>
+#include <vector>
 
+namespace po = boost::program_options;
+namespace ioteye {
 class AdminOptions {
 public:
     AdminOptions() {
     }
-    void init(int argc, char **argv) {
-        static struct option long_options[] = {{"pins", required_argument, 0, 'p'},
-                                               {"outdated", required_argument, 0, 'd'},
-                                               {"offline", required_argument, 0, 'f'},
-                                               {0, 0, 0, 0}};
+    void init(int argc, char **argv);
+    uint16_t getOutdatedDelay() const;
+    uint16_t getOfflineDelay() const;
+    uint16_t getDeadDelay() const;
+    uint16_t getMaxPins() const;
 
-        const char *usage =
-            "Usage: IoTeyeServer [options]\n"
-            "\n"
-            "Options:\n"
-            "  -p value, --pins=value           Maximum value of server pins (max: 65556, default: 255)\n"
-            "  -d delay, --outdated=delay       Time required for device information to be considered out of "
-            "date (default: 500)\n"
-            "  -f delay,  --offline=delay       Time required to consider the device disabled (default: "
-            "1000)\n"
-            "\n";
-
-        int result;
-        while ((result = getopt_long(argc, argv, "p:d:f:", long_options, nullptr)) != -1) {
-            switch (result) {
-                case 'p':
-                    m_maxPinsOpt = atoi(optarg);
-                    break;
-                case 'd':
-                    m_outdatedDelayOpt = atoi(optarg);
-                    break;
-                case 'f':
-                    m_offlineDelayOpt = atoi(optarg);
-                    break;
-                default:
-                    std::cout << usage;
-                    exit(1);
-            };
-        }
-    }
-    inline uint16_t getOutdatedDelay() {
-        return m_outdatedDelayOpt;
-    }
-    inline uint16_t getOfflineDelay() {
-        return m_offlineDelayOpt;
-    }
-    inline uint16_t getMaxPins() {
-        return m_maxPinsOpt;
-    }
+private:
+    void handleMaxPins(uint16_t value);
+    void handleOutdatedDelay(uint16_t value);
+    void handleOfflineDelay(uint16_t value);
+    void handleDeadDelay(uint16_t value);
 
 private:
     uint16_t m_maxPinsOpt = 255;
     uint16_t m_outdatedDelayOpt = 500;
     uint16_t m_offlineDelayOpt = 1000;
+    uint16_t m_deadDelayOpt = 10000;
+    enum OPTIONS { MAXPINS, OUTDATED, OFFLINE, DEADDELAY, HELP, MAXOPTIONS };
 };
-
-extern std::unique_ptr<AdminOptions> OPTIONS;
+}  // namespace ioteye
+extern std::unique_ptr<ioteye::AdminOptions> OPTIONS;
 
 #endif  // !ADMIN_OPTIONS_H

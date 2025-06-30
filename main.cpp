@@ -32,10 +32,13 @@
 using std::cout;
 using std::endl;
 
-std::unique_ptr<AdminOptions> OPTIONS = std::make_unique<AdminOptions>();
-
 int main(int argc, char** argv) {
-    OPTIONS->init(argc, argv);
+    try{
+        OPTIONS->init(argc, argv);
+    }catch(std::exception& e){
+        std::cerr << e.what() << std::endl;
+        return 1;
+    }
     // Load devices from file
     std::shared_ptr<ioteye::FileHandler> devicesJsonHandler;
     std::shared_ptr<ioteye::DeviceFileManager> deviceJsonManager;
@@ -51,6 +54,7 @@ int main(int argc, char** argv) {
                   << std::endl;
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
+        return 1;
     }
 
     auto pins = std::make_shared<PinsResource>();
@@ -102,6 +106,7 @@ int main(int argc, char** argv) {
                   << std::endl;
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
+        return 1;
     }
     return 0;
 }
