@@ -41,13 +41,12 @@ endif()
 option(IOTEYE_BUILD_CLIENT "Build the client application" OFF)
 option(IOTEYE_SERVER_ENABLE_TESTS "Enable tests compilation" OFF)
 
-include_directories("include/")
-
 set(SRC_LIST
     src/functional.cpp
     src/serverResources.cpp
     src/device.cpp
-    src/file_manager.cpp)
+    src/file_manager.cpp
+    src/adminOptions.cpp)
 
 # --- Fetch jwt-cpp ---
 include(FetchContent)
@@ -63,6 +62,10 @@ fetchcontent_makeavailable(jwt-cpp)
 find_package(asio REQUIRED)
 find_package(ioteyeserver REQUIRED)
 find_package(Threads REQUIRED)
+find_package(Boost 1.88.0 REQUIRED COMPONENTS program_options)
+
+include_directories("include/")
+include_directories(${Boost_INCLUDE_DIRS})
 
 add_executable(main main.cpp ${SRC_LIST})
 
@@ -72,6 +75,7 @@ set(LIB_LIST
     nlohmann_json::nlohmann_json
     Threads::Threads
     asio::asio
+    ${Boost_LIBRARIES}
 )
 
 target_link_libraries(main PRIVATE ${LIB_LIST})

@@ -29,6 +29,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <vector>
 
@@ -36,13 +37,19 @@ namespace po = boost::program_options;
 namespace ioteye {
 class AdminOptions {
 public:
-    AdminOptions() {
-    }
-    void init(int argc, char **argv);
+    static AdminOptions& getOptions(int argc, char **argv);
+    static AdminOptions& getOptions();
     uint16_t getOutdatedDelay() const;
     uint16_t getOfflineDelay() const;
     uint16_t getDeadDelay() const;
     uint16_t getMaxPins() const;
+
+    AdminOptions(AdminOptions &other) = delete;
+    void operator=(const AdminOptions &) = delete;
+
+protected:
+    AdminOptions(int argc, char **argv);
+    ~AdminOptions() {};
 
 private:
     void handleMaxPins(uint16_t value);
@@ -51,13 +58,16 @@ private:
     void handleDeadDelay(uint16_t value);
 
 private:
+    int m_argc = 0;
+    char **m_argv = nullptr;
+
     uint16_t m_maxPinsOpt = 255;
     uint16_t m_outdatedDelayOpt = 500;
     uint16_t m_offlineDelayOpt = 1000;
     uint16_t m_deadDelayOpt = 10000;
     enum OPTIONS { MAXPINS, OUTDATED, OFFLINE, DEADDELAY, HELP, MAXOPTIONS };
 };
+
 }  // namespace ioteye
-extern std::unique_ptr<ioteye::AdminOptions> OPTIONS;
 
 #endif  // !ADMIN_OPTIONS_H

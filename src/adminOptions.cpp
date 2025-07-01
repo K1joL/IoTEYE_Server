@@ -1,6 +1,5 @@
 #include "adminOptions.h"
 
-std::unique_ptr<ioteye::AdminOptions> OPTIONS = std::make_unique<ioteye::AdminOptions>();
 namespace ioteye {
 
 void AdminOptions::handleMaxPins(uint16_t value) {
@@ -15,7 +14,22 @@ void AdminOptions::handleOfflineDelay(uint16_t value) {
 void AdminOptions::handleDeadDelay(uint16_t value) {
     m_deadDelayOpt = value;
 }
-void AdminOptions::init(int argc, char** argv) {
+
+uint16_t AdminOptions::getOutdatedDelay() const {
+    return m_outdatedDelayOpt;
+}
+
+uint16_t AdminOptions::getOfflineDelay() const {
+    return m_offlineDelayOpt;
+}
+uint16_t AdminOptions::getDeadDelay() const {
+    return m_deadDelayOpt;
+}
+uint16_t AdminOptions::getMaxPins() const {
+    return m_maxPinsOpt;
+}
+
+AdminOptions::AdminOptions(int argc, char** argv) : m_argc(argc), m_argv(argv) {
     std::vector<std::string> options = {"maxPins", "outdated", "offline",
                                         "dead", "help"};
     po::options_description desc("Usage: IoTeyeServer [options]");
@@ -30,7 +44,7 @@ void AdminOptions::init(int argc, char** argv) {
         "dead,d", po::value<uint16_t>(),
         "Time required to disable device monitoring (default: 10000)");
     po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::store(po::parse_command_line(m_argc, m_argv, desc), vm);
     po::notify(vm);
     std::unordered_map<std::string, std::function<void()>> handlers = {
         {options[MAXPINS], [&vm, opt = options[MAXPINS],
@@ -60,17 +74,13 @@ void AdminOptions::init(int argc, char** argv) {
             opt.second();
     }
 }
-uint16_t AdminOptions::getOutdatedDelay() const {
-    return m_outdatedDelayOpt;
+
+AdminOptions& AdminOptions::getOptions(int argc, char **argv) {
+    static AdminOptions instance(argc, argv);
+    return instance;
 }
-uint16_t AdminOptions::getOfflineDelay() const {
-    return m_offlineDelayOpt;
-}
-uint16_t AdminOptions::getDeadDelay() const {
-    return m_deadDelayOpt;
-}
-uint16_t AdminOptions::getMaxPins() const {
-    return m_maxPinsOpt;
+AdminOptions& AdminOptions::getOptions() {
+    return getOptions(0, {});
 }
 
 }  // namespace ioteye

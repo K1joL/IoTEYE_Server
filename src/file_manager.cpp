@@ -22,9 +22,11 @@
 */
 
 #include "file_manager.h"
+
 #include "adminOptions.h"
 
 using json = nlohmann::json;
+using ao = ioteye::AdminOptions;
 
 namespace ioteye {
 
@@ -83,18 +85,18 @@ bool DeviceFileManager::loadFile() {
             stringPins[pin[0]] = pin[1];
         }
 
-        DevicePtr newDevice =
-            std::make_shared<Device>(Device::Builder()
-                                         .setID(device["id"])
-                                         .setToken(device["token"])
-                                         .setMaxPins(device["maxPins"])
-                                         .setIntPinMap(std::move(intPins))
-                                         .setDoublePinMap(std::move(doublePins))
-                                         .setStringPinMap(std::move(stringPins))
-                                         .setPinsTypeMap(std::move(pinsType))
-                                         .setOfflineDelay(OPTIONS->getOfflineDelay())
-                                         .setOutdatedDelay(OPTIONS->getOutdatedDelay())
-                                         .build());
+        DevicePtr newDevice = std::make_shared<Device>(
+            Device::Builder()
+                .setID(device["id"])
+                .setToken(device["token"])
+                .setMaxPins(device["maxPins"])
+                .setIntPinMap(std::move(intPins))
+                .setDoublePinMap(std::move(doublePins))
+                .setStringPinMap(std::move(stringPins))
+                .setPinsTypeMap(std::move(pinsType))
+                .setOfflineDelay(ao::getOptions().getOfflineDelay())
+                .setOutdatedDelay(ao::getOptions().getOutdatedDelay())
+                .build());
         // Initialize other relevant data if necessary
         auto emplaceIt = m_devicesMap.emplace(newDevice->getID(), newDevice);
         // server::debug::log(newDevice->getPinsTypes().size());

@@ -34,7 +34,7 @@ using std::endl;
 
 int main(int argc, char** argv) {
     try{
-        OPTIONS->init(argc, argv);
+        ioteye::AdminOptions::getOptions(argc, argv);
     }catch(std::exception& e){
         std::cerr << e.what() << std::endl;
         return 1;

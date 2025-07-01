@@ -30,11 +30,15 @@
 
 #include "device.h"
 #include "functional.h"
+#include "adminOptions.h"
 
 using namespace ioteye;
+using ao = ioteye::AdminOptions;
 
 using std::cout;
 using std::endl;
+
+#define HEADER_DEVICE_TYPE "X-Device-Type"
 
 namespace ioteye {
 enum COMMANDS {

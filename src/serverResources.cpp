@@ -204,15 +204,21 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPOST(
     const HttpRequest &req) {
     log("DEVICE POST\n Request Arguments:\n", req.getArgs(), "---");
 
+    std::string deviceType = req.getHeaderValue(HEADER_DEVICE_TYPE);
     std::string cmd{req.getArg("cmd")};
     std::string payload{"token="};
     DevicePtr newDevice;
+    bool deleteAfterDeath = false;
     switch (ioteye::GetCommandCode(cmd)) {
         case ioteye::REGISTER_DEVICE:
             // Create new Device
+            if (deviceType == "Device")
+                deleteAfterDeath = true;
             newDevice = std::make_shared<ioteye::Device>(
-                OPTIONS->getOutdatedDelay(), OPTIONS->getOfflineDelay(),
-                OPTIONS->getMaxPins());
+                ao::getOptions().getOutdatedDelay(),
+                ao::getOptions().getOfflineDelay(),
+                ao::getOptions().getMaxPins(),
+                ao::getOptions().getDeadDelay(), deleteAfterDeath);
             payload += newDevice->getToken();
             if (newDevice != nullptr) {
                 log(s_idDeviceMap.emplace(newDevice->getID(), newDevice).second
