@@ -65,7 +65,14 @@ void Device::StateTimer::threadLoop() {
                 }
                 break;
             case STATES::OFFLINE:
-                // Do nothing while waiting for the ping
+                if (std::chrono::duration_cast<ms>(elapsed) >= m_deadDelay) {
+                    changeState(DEAD);
+                }
+                break;
+            case STATES::DEAD:
+                // Wait until destructed
+                break;
+            default:
                 break;
         }
     }
@@ -87,10 +94,12 @@ void Device::StateTimer::stop() {
     m_isStopped = true;
 }
 
-void Device::StateTimer::setDelays(ms outdatedDelay, ms offlineDelay) {
+void Device::StateTimer::setDelays(ms outdatedDelay, ms offlineDelay,
+                                   ms deadDelay) {
     std::lock_guard<std::mutex> lock(m_changingMutex);
     m_outdatedDelay = outdatedDelay;
     m_offlineDelay = offlineDelay;
+    m_deadDelay = deadDelay;
 }
 
 ms Device::StateTimer::getRemainingTime() const {
@@ -136,9 +145,10 @@ Device::Device() {
     generateToken();
 }
 
-Device::Device(uint16_t outdatedDelay, uint16_t offlineDelay, uint16_t maxPins)
+Device::Device(uint16_t outdatedDelay, uint16_t offlineDelay,
+               uint16_t deadDelay, uint16_t maxPins, bool deleteAfterOffline)
     : Device() {
-    m_stateTimer->setDelays(ms(outdatedDelay), ms(offlineDelay));
+    m_stateTimer->setDelays(ms(outdatedDelay), ms(offlineDelay), ms(deadDelay));
     m_maxPins = maxPins;
 }
 
@@ -155,7 +165,6 @@ Device::Device(Device&& other) noexcept
         std::bind(&Device::changeState, this, std::placeholders::_1),
         m_timerMutex, other.m_stateTimer->getOfflineDelay(),
         other.m_stateTimer->getOutdatedDelay());
-    m_idSequence = other.m_id + 1;
 }
 
 Device& Device::operator=(Device&& other) noexcept {
@@ -172,7 +181,7 @@ Device& Device::operator=(Device&& other) noexcept {
             std::bind(&Device::changeState, this, std::placeholders::_1),
             m_timerMutex, other.m_stateTimer->getOfflineDelay(),
             other.m_stateTimer->getOutdatedDelay());
-        m_idSequence = other.m_id + 1;
+        adjustIdSequence(other.m_id);
     }
     return *this;
 }
@@ -192,6 +201,10 @@ std::string Device::getToken() {
     return m_token;
 }
 
+uint64_t Device::getID() {
+    return m_id;
+}
+
 uint8_t Device::getState() {
     return m_state;
 }
@@ -201,6 +214,10 @@ void Device::changeState(uint8_t state) {
         m_state = state;
         // log("Changed State to ", char(state + 48));
     }
+}
+
+void Device::ping() {
+    m_stateTimer->ping();
 }
 
 Device::~Device() {
@@ -336,6 +353,11 @@ const std::unordered_map<uint16_t, std::string>& Device::getStringPins() const {
     return m_stringPins;
 }
 
+void Device::adjustIdSequence(DeviceID id) {
+    if(m_idSequence <= id)
+    m_idSequence = id + 1;
+}
+
 // Device builder
 Device::Builder::Builder()
     : m_outdatedDelay(500),
@@ -352,6 +374,11 @@ Device::Builder& Device::Builder::setOutdatedDelay(uint16_t outdatedDelay) {
 
 Device::Builder& Device::Builder::setOfflineDelay(uint16_t offlineDelay) {
     m_offlineDelay = offlineDelay;
+    return *this;
+}
+
+Device::Builder& Device::Builder::setDeadDelay(uint16_t deadDelay) {
+    m_deadDelay = deadDelay;
     return *this;
 }
 
@@ -425,8 +452,15 @@ Device::Builder& Device::Builder::setPinsTypeMap(
     return *this;
 }
 
+Device::Builder& Device::Builder::setDeleteAfterOffline(
+    bool deleteAfterOffline) {
+    m_deleteAfterOffline = deleteAfterOffline;
+    return *this;
+}
+
 Device Device::Builder::build() {
-    Device device(m_outdatedDelay, m_offlineDelay, m_maxPins);
+    Device device(m_outdatedDelay, m_offlineDelay, m_deadDelay, m_maxPins,
+                  m_deleteAfterOffline);
     device.m_id = m_id;
     if (!m_token.empty())
         device.m_token = m_token;

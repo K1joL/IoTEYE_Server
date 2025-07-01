@@ -202,7 +202,7 @@ std::shared_ptr<HttpResponse> PinsResource::renderDELETE(
 
 std::shared_ptr<HttpResponse> DeviceResource::renderPOST(
     const HttpRequest &req) {
-    log("DEVICE POST\n Request Arguments:\n", req.getArgs(), "---");
+    log("DEVICE POST\n Request Arguments:\n", req.getArgs());
 
     std::string deviceType = req.getHeaderValue(HEADER_DEVICE_TYPE);
     std::string cmd{req.getArg("cmd")};
@@ -217,8 +217,8 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPOST(
             newDevice = std::make_shared<ioteye::Device>(
                 ao::getOptions().getOutdatedDelay(),
                 ao::getOptions().getOfflineDelay(),
-                ao::getOptions().getMaxPins(),
-                ao::getOptions().getDeadDelay(), deleteAfterDeath);
+                ao::getOptions().getDeadDelay(), ao::getOptions().getMaxPins(),
+                deleteAfterDeath);
             payload += newDevice->getToken();
             if (newDevice != nullptr) {
                 log(s_idDeviceMap.emplace(newDevice->getID(), newDevice).second
