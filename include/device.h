@@ -40,7 +40,7 @@ using ms = std::chrono::milliseconds;
 using chronoClock = std::chrono::high_resolution_clock;
 using DeviceID = uint64_t;
 using pinsTypesMap = std::unordered_map<uint16_t, uint8_t>;
-using pinsStringMap = std::unordered_map<std::string, uint8_t>;
+using pinsStringMap = std::unordered_map<uint16_t, std::string>;
 using pinsIntMap = std::unordered_map<uint16_t, int>;
 using pinsDoubleMap = std::unordered_map<uint16_t, double>;
 
@@ -53,6 +53,7 @@ struct DeviceParams {
     pinsStringMap stringPins;
     pinsIntMap intPins;
     pinsDoubleMap doublePins;
+    uint16_t maxPins = 0;
 };
 
 class Device {
