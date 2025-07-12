@@ -27,6 +27,7 @@
 #include <mutex>
 #include <string>
 #ifdef ENABLE_LOGGING
+#include <chrono>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
@@ -38,14 +39,57 @@ uint8_t GetCommandCode(const std::string& cmd);
 
 namespace ioteye::server::debug {
 #ifdef ENABLE_LOGGING
+enum LogLevel { STATUS, INFO, WARNING, ERROR };
+
 static std::mutex logMutex;
+static auto start = std::chrono::high_resolution_clock::now();
+
+std::string getLevelString(uint8_t level) {
+    switch (level) {
+        case LogLevel::STATUS:
+            return "STATUS";
+        case LogLevel::INFO:
+            return "INFO";
+        case LogLevel::WARNING:
+            return "WARNING";
+        case LogLevel::ERROR:
+            return "ERROR";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+inline std::chrono::duration<double> getTimestamp() {
+    return std::chrono::high_resolution_clock::now() - start;
+}
+
+inline void printPrefix(uint8_t level) {
+    std::cout << '[' << getTimestamp().count() << "] [" << getLevelString(level)
+              << "] ";
+}
 
 template <typename... Args>
 inline void log(Args&&... args) {
+    log(LogLevel::STATUS, args);
+}
+
+template <typename... Args>
+inline void logln(Args&&... args) {
+    log(args, std::endl);
+}
+
+template <typename... Args>
+inline void logln(uint8_t level, Args&&... args) {
+    log(level, args, std::endl);
+}
+
+template <typename... Args>
+inline void log(uint8_t level, Args&&... args) {
     std::lock_guard<std::mutex> lock(logMutex);
     std::ostringstream oss;
     (oss << ... << std::forward<Args>(args));
-    std::cout << "LOG: " << oss.str() << std::endl;
+    printPrefix();
+    std::cout << oss.str();
 }
 
 // << operator overload specifically for std::unordered_map
@@ -66,9 +110,13 @@ std::ostream& operator<<(std::ostream& os,
 
 #else
 template <typename... Args>
-inline void log(Args &&...args) {
+inline void log(Args&&...) {
     // Dummy code to prevent unused parameter warning
-    (void)std::initializer_list<int>{(std::forward<Args>(args), 0)...};
+}
+
+template <typename... Args>
+inline void logln(Args&&...) {
+    // Dummy code to prevent unused parameter warning
 }
 #endif
 
