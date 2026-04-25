@@ -21,17 +21,18 @@
 # SOFTWARE.
 */
 
-#include "serverResources.h"
-
-#include "adminOptions.h"
+#include <adminOptions.hpp>
+#include <commands.hpp>
+#include <logging.hpp>
+#include <serverResources.hpp>
 
 using namespace ioteye::server::debug;
 using ioteye::HttpStatusCode;
 
 std::unordered_map<uint64_t, DevicePtr> s_idDeviceMap;
 
-std::shared_ptr<HttpResponse> PinsResource::renderPOST(const HttpRequest &req) {
-    log("pins POST\n", req.getArgs());
+std::shared_ptr<HttpResponse> PinsResource::renderPOST(const HttpRequest& req) {
+    logStatus("pins POST\n", req.getArgs());
 
     // Getting request arguments
     uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
@@ -75,8 +76,8 @@ std::shared_ptr<HttpResponse> PinsResource::renderPOST(const HttpRequest &req) {
     }
 }
 
-std::shared_ptr<HttpResponse> PinsResource::renderGET(const HttpRequest &req) {
-    log("PINS GET\n", req.getArgs());
+std::shared_ptr<HttpResponse> PinsResource::renderGET(const HttpRequest& req) {
+    logStatus("PINS GET\n", req.getArgs());
 
     // Getting request arguments
     uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
@@ -116,8 +117,8 @@ std::shared_ptr<HttpResponse> PinsResource::renderGET(const HttpRequest &req) {
     }
 }
 
-std::shared_ptr<HttpResponse> PinsResource::renderPUT(const HttpRequest &req) {
-    log("PINS PUT\n", req.getArgs());
+std::shared_ptr<HttpResponse> PinsResource::renderPUT(const HttpRequest& req) {
+    logStatus("PINS PUT\n", req.getArgs());
 
     // Getting request arguments
     uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
@@ -159,8 +160,8 @@ std::shared_ptr<HttpResponse> PinsResource::renderPUT(const HttpRequest &req) {
 }
 
 std::shared_ptr<HttpResponse> PinsResource::renderDELETE(
-    const HttpRequest &req) {
-    log("PINS DELETE\n", req.getArgs());
+    const HttpRequest& req) {
+    logStatus("PINS DELETE\n", req.getArgs());
 
     // Getting request arguments
     uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
@@ -201,8 +202,8 @@ std::shared_ptr<HttpResponse> PinsResource::renderDELETE(
 }
 
 std::shared_ptr<HttpResponse> DeviceResource::renderPOST(
-    const HttpRequest &req) {
-    log("DEVICE POST\n Request Arguments:\n", req.getArgs());
+    const HttpRequest& req) {
+    logStatus("DEVICE POST\n Request Arguments:\n", req.getArgs());
 
     std::string deviceType = req.getHeaderValue(HEADER_DEVICE_TYPE);
     std::string cmd{req.getArg("cmd")};
@@ -221,14 +222,14 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPOST(
                 deleteAfterDeath);
             payload += newDevice->getToken();
             if (newDevice != nullptr) {
-                log(s_idDeviceMap.emplace(newDevice->getID(), newDevice).second
+                logStatus(s_idDeviceMap.emplace(newDevice->getID(), newDevice).second
                         ? "Device inserted!"
                         : "Device failed to insert!");
                 auto it = s_idDeviceMap.find(newDevice->getID());
-                log("Inserted device token: ", it != s_idDeviceMap.end()
+                logStatus("Inserted device token: ", it != s_idDeviceMap.end()
                                                    ? it->second->getToken()
                                                    : "Nothing");
-                log("DeviceMap Size: ", s_idDeviceMap.size());
+                logStatus("DeviceMap Size: ", s_idDeviceMap.size());
                 return std::make_shared<HttpResponse>(HttpStatusCode::CREATED,
                                                       payload);
             } else
@@ -243,8 +244,8 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPOST(
 }
 
 std::shared_ptr<HttpResponse> DeviceResource::renderGET(
-    const HttpRequest &req) {
-    log("DEVICE GET\n", req.getArgs());
+    const HttpRequest& req) {
+    logStatus("DEVICE GET\n", req.getArgs());
 
     // Getting request arguments
     std::string cmd{req.getArg("cmd")};
@@ -283,8 +284,8 @@ std::shared_ptr<HttpResponse> DeviceResource::renderGET(
 }
 
 std::shared_ptr<HttpResponse> DeviceResource::renderPUT(
-    const HttpRequest &req) {
-    log("DEVICE PUT\n", req.getArgs());
+    const HttpRequest& req) {
+    logStatus("DEVICE PUT\n", req.getArgs());
 
     // Getting request arguments
     std::string cmd{req.getArg("cmd")};
@@ -321,8 +322,8 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPUT(
 }
 
 std::shared_ptr<HttpResponse> DeviceResource::renderDELETE(
-    const HttpRequest &req) {
-    log("DEVICE DELETE\n", req.getArgs());
+    const HttpRequest& req) {
+    logStatus("DEVICE DELETE\n", req.getArgs());
 
     // Getting request arguments
     std::string cmd{req.getArg("cmd")};
@@ -360,7 +361,7 @@ std::shared_ptr<HttpResponse> DeviceResource::renderDELETE(
     }
 }
 
-uint16_t authCheck(const std::string &token, DeviceIter &deviceIter) {
+uint16_t authCheck(const std::string& token, DeviceIter& deviceIter) {
     try {
         const auto decodedToken = jwt::decode(token);
         uint64_t devID =
@@ -371,7 +372,7 @@ uint16_t authCheck(const std::string &token, DeviceIter &deviceIter) {
         if (device->second->getToken() != token)
             return HttpStatusCode::UNAUTHORIZED;
         deviceIter = device;
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
         std::cerr << "JWT Failure: " << e.what() << std::endl;
         return HttpStatusCode::BAD_REQUEST;
     }

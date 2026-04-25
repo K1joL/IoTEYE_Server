@@ -1,4 +1,4 @@
-/*# MIT License
+# MIT License
 
 # Copyright (c) 2025 Shults Bogdan aka K1joL
 
@@ -19,14 +19,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-*/
 
-#include "functional.h"
-namespace ioteye {
-uint8_t GetCommandCode(const std::string &cmd) {
-    if (cmd.size() == 2)
-        return cmd[0] + cmd[1];
-    else
-        return 0;
-}
-}  // namespace ioteye
+add_executable(ioteye app.cpp)
+
+set(LIB_LIST
+    ioteye::common
+    ioteye::utils
+    ioteye::device
+    ioteye::persistence
+    # ioteye::device_manager
+    ioteye::server
+    ioteyeserver
+    asio::asio
+    Threads::Threads
+    ${Boost_LIBRARIES}
+)
+
+target_link_libraries(ioteye PRIVATE ${LIB_LIST})

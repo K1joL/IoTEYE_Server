@@ -21,24 +21,12 @@
 # SOFTWARE.
 */
 
-#ifndef SERVER_RESOURCES_H
-#define SERVER_RESOURCES_H
+#ifndef IOTEYE_COMMON_COMMANDS_HPP
+#define IOTEYE_COMMON_COMMANDS_HPP
 
-#include <ioteyeserver.hpp>
-#include <memory>
-#include <unordered_map>
+#include <stdint.h>
 
-#include "device.h"
-#include "functional.h"
-#include "adminOptions.h"
-
-using namespace ioteye;
-using ao = ioteye::AdminOptions;
-
-using std::cout;
-using std::endl;
-
-#define HEADER_DEVICE_TYPE "X-Device-Type"
+#include <string>
 
 namespace ioteye {
 enum COMMANDS {
@@ -53,27 +41,8 @@ enum COMMANDS {
     GET_PIN = 'p' + 'v',               // 230
     COMMANDS_MAX = 9
 };
-}
+uint8_t GetCommandCode(const std::string& cmd);
 
-extern std::unordered_map<uint64_t, DevicePtr> s_idDeviceMap;
+}  // namespace ioteye
 
-using DeviceIter = std::unordered_map<uint64_t, DevicePtr>::iterator;
-uint16_t authCheck(const std::string& token, DeviceIter& deviceIter);
-
-class PinsResource : public HttpResourceHandler {
-public:
-    std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
-    std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
-    std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
-    std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
-};
-
-class DeviceResource : public HttpResourceHandler {
-public:
-    std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
-    std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
-    std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
-    std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
-};
-
-#endif  // SERVER_RESOURCES_H
+#endif  // IOTEYE_COMMON_COMMANDS_HPP

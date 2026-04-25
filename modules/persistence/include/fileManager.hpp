@@ -25,16 +25,15 @@
 #define IOTEYE_FILE_MANAGER_H
 
 #include <condition_variable>
+#include <device.hpp>
 #include <fstream>
+#include <logging.hpp>
 #include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <queue>
 #include <string>
 #include <thread>
-
-#include "device.h"
-#include "functional.h"
 
 namespace ioteye {
 

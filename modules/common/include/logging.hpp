@@ -21,30 +21,22 @@
 # SOFTWARE.
 */
 
-#ifndef IOTEYE_FUNCTIONAL_H
-#define IOTEYE_FUNCTIONAL_H
+#ifndef IOTEYE_COMMON_IOTEYE_LOGGING_HPP
+#define IOTEYE_COMMON_IOTEYE_LOGGING_HPP
 
 #include <mutex>
 #include <string>
+#include <unordered_map>
+#include <iostream>
 #ifdef ENABLE_LOGGING
 #include <chrono>
-#include <iostream>
 #include <sstream>
-#include <unordered_map>
 #endif  // !ENABLE_LOGGING
 
-namespace ioteye {
-uint8_t GetCommandCode(const std::string& cmd);
-}
-
 namespace ioteye::server::debug {
-#ifdef ENABLE_LOGGING
 enum LogLevel { STATUS, INFO, WARNING, ERROR };
 
-static std::mutex logMutex;
-static auto start = std::chrono::high_resolution_clock::now();
-
-std::string getLevelString(uint8_t level) {
+inline std::string getLevelString(LogLevel level) {
     switch (level) {
         case LogLevel::STATUS:
             return "STATUS";
@@ -57,39 +49,6 @@ std::string getLevelString(uint8_t level) {
         default:
             return "UNKNOWN";
     }
-}
-
-inline std::chrono::duration<double> getTimestamp() {
-    return std::chrono::high_resolution_clock::now() - start;
-}
-
-inline void printPrefix(uint8_t level) {
-    std::cout << '[' << getTimestamp().count() << "] [" << getLevelString(level)
-              << "] ";
-}
-
-template <typename... Args>
-inline void log(Args&&... args) {
-    log(LogLevel::STATUS, args);
-}
-
-template <typename... Args>
-inline void logln(Args&&... args) {
-    log(args, std::endl);
-}
-
-template <typename... Args>
-inline void logln(uint8_t level, Args&&... args) {
-    log(level, args, std::endl);
-}
-
-template <typename... Args>
-inline void log(uint8_t level, Args&&... args) {
-    std::lock_guard<std::mutex> lock(logMutex);
-    std::ostringstream oss;
-    (oss << ... << std::forward<Args>(args));
-    printPrefix();
-    std::cout << oss.str();
 }
 
 // << operator overload specifically for std::unordered_map
@@ -108,9 +67,47 @@ std::ostream& operator<<(std::ostream& os,
     return os;
 }
 
+#ifdef ENABLE_LOGGING
+static std::mutex logMutex;
+static auto start = std::chrono::high_resolution_clock::now();
+
+inline std::chrono::duration<double> getTimestamp() {
+    return std::chrono::high_resolution_clock::now() - start;
+}
+
+inline void printPrefix(LogLevel level) {
+    std::cout << '[' << getTimestamp().count() << "] [" << getLevelString(level)
+              << "] ";
+}
+
+template <typename... Args>
+inline void log(LogLevel level, Args&&... args) {
+    std::lock_guard<std::mutex> lock(logMutex);
+    std::ostringstream oss;
+    (oss << ... << std::forward<Args>(args));
+    printPrefix(level);
+    std::cout << oss.str();
+    std::cout.flush();
+}
+
+template <typename... Args>
+inline void logln(LogLevel level, Args&&... args) {
+    log(level, std::forward<Args>(args)..., '\n');
+}
+
+template <typename... Args>
+inline void logStatus(Args&&... args) {
+    logln(LogLevel::STATUS, std::forward<Args>(args)...);
+}
+
 #else
 template <typename... Args>
 inline void log(Args&&...) {
+    // Dummy code to prevent unused parameter warning
+}
+
+template <typename... Args>
+inline void logStatus(Args&&...) {
     // Dummy code to prevent unused parameter warning
 }
 
@@ -122,4 +119,4 @@ inline void logln(Args&&...) {
 
 }  // namespace ioteye::server::debug
 
-#endif  // IOTEYE_FUNCTIONAL_H
+#endif  // IOTEYE_COMMON_IOTEYE_LOGGING_HPP

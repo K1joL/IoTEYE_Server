@@ -1,4 +1,4 @@
-#include "processorPool.hpp"
+#include <processorPool.hpp>
 
 namespace ioteye {
 size_t ManagedObject::m_idSequence = 1;
@@ -186,7 +186,8 @@ bool ProcessorPool::registerObject(const std::shared_ptr<ManagedObject> obj) {
         if (procPtr->addObject(obj)) {
             ++m_objCount;
             if (!adjustProcessors())
-                server::debug::logln("Error while adjusting processor count");
+                server::debug::logln(server::debug::LogLevel::ERROR,
+                                     "Error while adjusting processor count");
             return true;
         }
     return false;
@@ -204,7 +205,8 @@ inline bool ProcessorPool::removeObject(objID objId) {
         if (foundProc->removeObject(objId)) {
             --m_objCount;
             if (!adjustProcessors())
-                server::debug::logln("Error while adjusting processor count");
+                server::debug::logln(server::debug::LogLevel::ERROR,
+                                     "Error while adjusting processor count");
             return true;
         }
     }
@@ -221,7 +223,7 @@ std::shared_ptr<Processor> ProcessorPool::getProcessorContains(
 
 inline std::shared_ptr<Processor> ProcessorPool::getProcessorContains(
     objID id) const {
-    return std::shared_ptr<Processor>();
+    return m_processors[id];
 }
 
 void ProcessorPool::stopAll() {
@@ -247,7 +249,8 @@ bool ProcessorPool::addProcessor() {
             m_processors.push_back(
                 std::make_shared<Processor>(m_sleepInterval));
         } catch (std::exception& e) {
-            server::debug::logln("Error while emplace processor: ", e.what());
+            server::debug::logln(server::debug::LogLevel::ERROR,
+                                 "Error while emplace processor: ", e.what());
             return false;
         }
         ++m_procCount;
@@ -274,7 +277,7 @@ bool ProcessorPool::redistributeObjects(std::shared_ptr<Processor> processor) {
     auto objectsToRedistribute = processor->getObjects();
     for (auto objPair : objectsToRedistribute) {
         if (!processor->moveObject(getLeastLoadProc(),
-                                  objPair.second->getID())) {
+                                   objPair.second->getID())) {
             return false;
         }
     }

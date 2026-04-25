@@ -21,9 +21,8 @@
 # SOFTWARE.
 */
 
-#include "file_manager.h"
-
-#include "adminOptions.h"
+#include <adminOptions.hpp>
+#include <fileManager.hpp>
 
 using json = nlohmann::json;
 using ao = ioteye::AdminOptions;
@@ -104,7 +103,7 @@ bool DeviceFileManager::loadFile() {
         // server::debug::log(newDevice->getStringPins().size());
         // server::debug::log(newDevice->getDoublePins().size());
         ++count;
-        ioteye::server::debug::log("Device loading ", count, '/', j.size(),
+        ioteye::server::debug::logStatus("Device loading ", count, '/', j.size(),
                                    emplaceIt.second ? " Success" : "Failed");
     }
     return true;

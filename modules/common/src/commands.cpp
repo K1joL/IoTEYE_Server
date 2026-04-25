@@ -1,4 +1,4 @@
-# MIT License
+/*# MIT License
 
 # Copyright (c) 2025 Shults Bogdan aka K1joL
 
@@ -19,39 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+*/
 
-cmake_minimum_required(VERSION 3.18)
-
-project(ioteyeClient VERSION 1.0)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_compile_options(-Wall -Wextra -Wpedantic)
-
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-endif()
-
-# Conditionally add logging definitions
-if(IOTEYE_CLIENT_ENABLE_LOGGING)
-    message(STATUS "Client Logging enabled!")
-    add_compile_definitions(IOTEYE_CLIENT_ENABLE_LOGGING)
-endif()
-
-include_directories("include/")
-
-set(SRC_LIST
-    src/client.cpp
-)
-
-# --- Find Dependencies ---
-find_package(asio REQUIRED)
-
-add_executable(${PROJECT_NAME} client_main.cpp ${SRC_LIST})
-target_link_libraries(${PROJECT_NAME} PRIVATE ioteyeserver asio::asio)
-
-if(IOTEYE_CLIENT_ENABLE_TESTS)
-    message(STATUS "Client tests compilation is ON!")  
-    add_executable(client_test tests/performance_test.cpp ${SRC_LIST})
-    target_link_libraries(client_test PRIVATE ioteyeserver asio::asio)
-endif()
+#include <commands.hpp>
+namespace ioteye {
+uint8_t GetCommandCode(const std::string &cmd) {
+    if (cmd.size() == 2)
+        return cmd[0] + cmd[1];
+    else
+        return 0;
+}
+}  // namespace ioteye

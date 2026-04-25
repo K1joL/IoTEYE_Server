@@ -21,21 +21,20 @@
 # SOFTWARE.
 */
 
+#include <adminOptions.hpp>
+#include <fileManager.hpp>
 #include <iostream>
 #include <ioteyeserver.hpp>
-
-#include "adminOptions.h"
-#include "file_manager.h"
-#include "functional.h"
-#include "serverResources.h"
+#include <logging.hpp>
+#include <serverResources.hpp>
 
 using std::cout;
 using std::endl;
 
 int main(int argc, char** argv) {
-    try{
+    try {
         ioteye::AdminOptions::getOptions(argc, argv);
-    }catch(std::exception& e){
+    } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
         return 1;
     }
@@ -83,6 +82,7 @@ int main(int argc, char** argv) {
     char key;
     while (true) {
         key = getchar();
+        // ESC
         if (key == 27) {
             ws.shutdown();
             break;

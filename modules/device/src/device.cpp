@@ -21,9 +21,9 @@
 # SOFTWARE.
 */
 
-#include "device.h"
+#include <device.hpp>
+#include <logging.hpp>
 
-#include "functional.h"
 namespace ioteye {
 using namespace server::debug;
 
@@ -146,7 +146,7 @@ Device::Device() {
 }
 
 Device::Device(uint16_t outdatedDelay, uint16_t offlineDelay,
-               uint16_t deadDelay, uint16_t maxPins, bool deleteAfterOffline)
+               uint16_t deadDelay, uint16_t maxPins, bool /* deleteAfterOffline */)
     : Device() {
     m_stateTimer->setDelays(ms(outdatedDelay), ms(offlineDelay), ms(deadDelay));
     m_maxPins = maxPins;
@@ -229,17 +229,17 @@ int Device::addPin(uint16_t pinNumber, const std::string& dataType,
     if (m_pinsCounter ==
         m_maxPins)  // the number of pins must be less than m_maxPins
     {
-        log("the number of pins must be less than ", m_maxPins);
+        log(LogLevel::WARNING, "the number of pins must be less than ", m_maxPins);
         return 2;
     }
     if (dataType.empty())  // if data type not specified
     {
-        log("data type is not specified");
+        log(LogLevel::WARNING, "data type is not specified");
         return 1;
     }
     if (m_pinsType.find(pinNumber) != m_pinsType.end())  // is pin exists
     {
-        log("pin exists");
+        logStatus("pin exists");
         return 3;
     }
 
@@ -354,8 +354,8 @@ const std::unordered_map<uint16_t, std::string>& Device::getStringPins() const {
 }
 
 void Device::adjustIdSequence(DeviceID id) {
-    if(m_idSequence <= id)
-    m_idSequence = id + 1;
+    if (m_idSequence <= id)
+        m_idSequence = id + 1;
 }
 
 // Device builder

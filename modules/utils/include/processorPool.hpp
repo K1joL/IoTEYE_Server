@@ -4,13 +4,13 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <logging.hpp>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
 #include <unordered_map>
 #include <vector>
-
-#include "functional.h"
 
 namespace ioteye {
 using ms = std::chrono::milliseconds;
@@ -32,7 +32,8 @@ private:
 };
 
 class Processor {
-    using ObjectsMap = std::unordered_map<objID, std::shared_ptr<ManagedObject>>;
+    using ObjectsMap =
+        std::unordered_map<objID, std::shared_ptr<ManagedObject>>;
 
 public:
     Processor(std::chrono::milliseconds sleepInterval);
@@ -51,7 +52,7 @@ public:
     ObjectsMap& getObjects();
     void setReady(bool isReady);
     void stop();
-    
+
     bool contains(std::shared_ptr<ManagedObject> obj) const;
     bool contains(objID id) const;
     size_t getSize() const;
@@ -81,8 +82,7 @@ public:
     bool removeObject(objID id);
     std::shared_ptr<Processor> getProcessorContains(
         const std::shared_ptr<ManagedObject> obj) const;
-    std::shared_ptr<Processor> getProcessorContains(
-        objID id) const;
+    std::shared_ptr<Processor> getProcessorContains(objID id) const;
     void stopAll();
 
 private:
@@ -129,7 +129,5 @@ private:
 };
 
 }  // namespace ioteye
-
-#include "processorPool.ipp"
 
 #endif  // !IOTEYE_PROCESSOR_POOL_HPP

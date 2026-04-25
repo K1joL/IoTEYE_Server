@@ -21,8 +21,8 @@
 # SOFTWARE.
 */
 
-#ifndef ADMIN_OPTIONS_H
-#define ADMIN_OPTIONS_H
+#ifndef IOTEYE_COMMON_ADMIN_OPTIONS_HPP
+#define IOTEYE_COMMON_ADMIN_OPTIONS_HPP
 
 #include <boost/program_options.hpp>
 #include <cstdint>
@@ -37,18 +37,18 @@ namespace po = boost::program_options;
 namespace ioteye {
 class AdminOptions {
 public:
-    static AdminOptions& getOptions(int argc, char **argv);
+    static AdminOptions& getOptions(int argc, char** argv);
     static AdminOptions& getOptions();
     uint16_t getOutdatedDelay() const;
     uint16_t getOfflineDelay() const;
     uint16_t getDeadDelay() const;
     uint16_t getMaxPins() const;
 
-    AdminOptions(AdminOptions &other) = delete;
-    void operator=(const AdminOptions &) = delete;
+    AdminOptions(AdminOptions& other) = delete;
+    void operator=(const AdminOptions&) = delete;
 
 protected:
-    AdminOptions(int argc, char **argv);
+    AdminOptions(int argc, char** argv);
     ~AdminOptions() {};
 
 private:
@@ -59,7 +59,7 @@ private:
 
 private:
     int m_argc = 0;
-    char **m_argv = nullptr;
+    char** m_argv = nullptr;
 
     uint16_t m_maxPinsOpt = 255;
     uint16_t m_outdatedDelayOpt = 500;
@@ -70,4 +70,4 @@ private:
 
 }  // namespace ioteye
 
-#endif  // !ADMIN_OPTIONS_H
+#endif  // IOTEYE_COMMON_ADMIN_OPTIONS_HPP
