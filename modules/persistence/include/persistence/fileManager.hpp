@@ -24,8 +24,9 @@
 #ifndef IOTEYE_FILE_MANAGER_H
 #define IOTEYE_FILE_MANAGER_H
 
+#include <common/logging.hpp>
 #include <condition_variable>
-#include <device.hpp>
+#include <device/device.hpp>
 #include <fstream>
 #include <logging.hpp>
 #include <memory>

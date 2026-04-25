@@ -21,12 +21,12 @@
 # SOFTWARE.
 */
 
-#include <adminOptions.hpp>
-#include <fileManager.hpp>
+#include <common/adminOptions.hpp>
+#include <persistence/fileManager.hpp>
 #include <iostream>
 #include <ioteyeserver.hpp>
-#include <logging.hpp>
-#include <serverResources.hpp>
+#include <common/logging.hpp>
+#include <server/serverResources.hpp>
 
 using std::cout;
 using std::endl;

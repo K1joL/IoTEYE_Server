@@ -21,8 +21,8 @@
 # SOFTWARE.
 */
 
-#include <adminOptions.hpp>
-#include <fileManager.hpp>
+#include <common/adminOptions.hpp>
+#include <persistence/fileManager.hpp>
 
 using json = nlohmann::json;
 using ao = ioteye::AdminOptions;

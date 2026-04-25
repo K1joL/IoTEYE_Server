@@ -21,7 +21,7 @@
 # SOFTWARE.
 */
 
-#include <adminOptions.hpp>
+#include <common/adminOptions.hpp>
 
 namespace ioteye {
 

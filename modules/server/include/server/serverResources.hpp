@@ -24,12 +24,11 @@
 #ifndef SERVER_RESOURCES_HPP
 #define SERVER_RESOURCES_HPP
 
+#include <common/adminOptions.hpp>
+#include <device/device.hpp>
 #include <ioteyeserver.hpp>
 #include <memory>
 #include <unordered_map>
-
-#include <device.hpp>
-#include <adminOptions.hpp>
 
 using namespace ioteye;
 using ao = ioteye::AdminOptions;

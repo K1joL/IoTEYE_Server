@@ -21,8 +21,8 @@
 # SOFTWARE.
 */
 
-#include <device.hpp>
-#include <logging.hpp>
+#include <common/logging.hpp>
+#include <device/device.hpp>
 
 namespace ioteye {
 using namespace server::debug;
@@ -146,7 +146,8 @@ Device::Device() {
 }
 
 Device::Device(uint16_t outdatedDelay, uint16_t offlineDelay,
-               uint16_t deadDelay, uint16_t maxPins, bool /* deleteAfterOffline */)
+               uint16_t deadDelay, uint16_t maxPins,
+               bool /* deleteAfterOffline */)
     : Device() {
     m_stateTimer->setDelays(ms(outdatedDelay), ms(offlineDelay), ms(deadDelay));
     m_maxPins = maxPins;
@@ -229,7 +230,8 @@ int Device::addPin(uint16_t pinNumber, const std::string& dataType,
     if (m_pinsCounter ==
         m_maxPins)  // the number of pins must be less than m_maxPins
     {
-        log(LogLevel::WARNING, "the number of pins must be less than ", m_maxPins);
+        log(LogLevel::WARNING, "the number of pins must be less than ",
+            m_maxPins);
         return 2;
     }
     if (dataType.empty())  // if data type not specified

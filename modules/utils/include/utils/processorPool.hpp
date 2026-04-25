@@ -3,8 +3,8 @@
 
 #include <atomic>
 #include <chrono>
+#include <common/logging.hpp>
 #include <functional>
-#include <logging.hpp>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>

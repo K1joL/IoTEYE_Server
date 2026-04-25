@@ -21,10 +21,10 @@
 # SOFTWARE.
 */
 
-#include <adminOptions.hpp>
-#include <commands.hpp>
-#include <logging.hpp>
-#include <serverResources.hpp>
+#include <common/adminOptions.hpp>
+#include <common/commands.hpp>
+#include <common/logging.hpp>
+#include <server/serverResources.hpp>
 
 using namespace ioteye::server::debug;
 using ioteye::HttpStatusCode;
@@ -222,13 +222,14 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPOST(
                 deleteAfterDeath);
             payload += newDevice->getToken();
             if (newDevice != nullptr) {
-                logStatus(s_idDeviceMap.emplace(newDevice->getID(), newDevice).second
+                logStatus(
+                    s_idDeviceMap.emplace(newDevice->getID(), newDevice).second
                         ? "Device inserted!"
                         : "Device failed to insert!");
                 auto it = s_idDeviceMap.find(newDevice->getID());
-                logStatus("Inserted device token: ", it != s_idDeviceMap.end()
-                                                   ? it->second->getToken()
-                                                   : "Nothing");
+                logStatus("Inserted device token: ",
+                          it != s_idDeviceMap.end() ? it->second->getToken()
+                                                    : "Nothing");
                 logStatus("DeviceMap Size: ", s_idDeviceMap.size());
                 return std::make_shared<HttpResponse>(HttpStatusCode::CREATED,
                                                       payload);

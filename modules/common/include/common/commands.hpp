@@ -21,13 +21,28 @@
 # SOFTWARE.
 */
 
-#include <common/commands.hpp>
+#ifndef IOTEYE_COMMON_COMMANDS_HPP
+#define IOTEYE_COMMON_COMMANDS_HPP
+
+#include <stdint.h>
+
+#include <string>
 
 namespace ioteye {
-uint8_t GetCommandCode(const std::string& cmd) {
-    if (cmd.size() == 2)
-        return cmd[0] + cmd[1];
-    else
-        return 0;
-}
+enum COMMANDS {
+    NON_COMMAND = 0,
+    REGISTER_DEVICE = 'r' + 'd',       // 214
+    DELETE_DEVICE = 'd' + 'd',         // 200
+    DEVICE_STATUS = 'd' + 's',         // 215
+    DEVICE_STATUS_UPDATE = 'u' + 's',  // 232
+    CREATE_PIN = 'c' + 'p',            // 211
+    UPDATE_PIN = 'u' + 'p',            // 229
+    DELETE_PIN = 'd' + 'p',            // 212
+    GET_PIN = 'p' + 'v',               // 230
+    COMMANDS_MAX = 9
+};
+uint8_t GetCommandCode(const std::string& cmd);
+
 }  // namespace ioteye
+
+#endif  // IOTEYE_COMMON_COMMANDS_HPP
