@@ -1,6 +1,6 @@
 #include <utils/processorPool.hpp>
 
-namespace ioteye {
+namespace ioteye::utils {
 size_t ManagedObject::m_idSequence = 1;
 
 ManagedObject::ManagedObject() {
@@ -13,7 +13,6 @@ objID ManagedObject::getID() const {
 }
 
 void ManagedObject::process() {
-    return;
 }
 
 Processor::Processor(std::chrono::milliseconds sleepInterval)
@@ -89,7 +88,10 @@ bool Processor::removeObject(objID id) {
 }
 
 bool Processor::moveObject(std::shared_ptr<Processor> other, objID id) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
+    std::unique_lock<std::shared_mutex> sourceLock(m_mutex, std::defer_lock);
+    std::unique_lock<std::shared_mutex> otherLock(other->m_mutex,
+                                                  std::defer_lock);
+    std::lock(sourceLock, otherLock);
     auto node = m_objects.extract(id);
     if (node)
         return other->m_objects.insert(std::move(node)).inserted;
@@ -117,6 +119,7 @@ void Processor::setReady(bool isReady) {
 
 void Processor::stop() {
     m_running.store(false);
+    setReady(false);
 }
 
 bool Processor::isRunning() const {
@@ -131,9 +134,9 @@ Processor::ObjectsMap& Processor::getObjects() {
     return m_objects;
 }
 
-ProcessorPool::ProcessorPool(size_t minProc, size_t maxProc,
-                             size_t procCapacity, ms sleepInterval,
-                             loadt maxLoad, loadt minLoad)
+ProcessorPool::ProcessorPool(size_t maxProc, size_t minProc,
+                             size_t procCapacity, loadt maxLoad, loadt minLoad,
+                             ms sleepInterval)
     : m_maxProc(maxProc),
       m_minProc(minProc),
       m_procCapacity(procCapacity),
@@ -148,17 +151,23 @@ ProcessorPool::ProcessorPool(ProcessorPool&& other)
     : m_maxProc(other.m_maxProc),
       m_minProc(other.m_minProc),
       m_procCapacity(other.m_procCapacity),
-      m_procCount(other.m_procCount),
-      m_objCount(other.m_objCount),
       m_maxLoad(other.m_maxLoad),
       m_minLoad(other.m_minLoad),
       m_sleepInterval(other.m_sleepInterval),
-      m_processors(std::move(other.m_processors)),
-      m_threads(std::move(other.m_threads)) {
+      m_procCount(other.m_procCount),
+      m_objCount(other.m_objCount),
+      m_processors(std::move(other.m_processors)) {
+    other.m_objCount = 0;
+    other.m_procCount = 0;
 }
 
 ProcessorPool& ProcessorPool::operator=(ProcessorPool&& other) {
     if (&other != this) {
+        std::unique_lock<std::recursive_mutex> lock1(m_poolMutex,
+                                                     std::defer_lock);
+        std::unique_lock<std::recursive_mutex> lock2(other.m_poolMutex,
+                                                     std::defer_lock);
+        std::lock(lock1, lock2);
         m_maxLoad = other.m_maxLoad;
         m_minLoad = other.m_minLoad;
         m_maxProc = other.m_maxProc;
@@ -168,8 +177,9 @@ ProcessorPool& ProcessorPool::operator=(ProcessorPool&& other) {
         m_objCount = other.m_objCount;
         m_procCount = other.m_procCount;
         m_processors = std::move(other.m_processors);
-        m_threads = std::move(other.m_threads);
     }
+    other.m_objCount = 0;
+    other.m_procCount = 0;
     return *this;
 }
 
@@ -179,6 +189,7 @@ ProcessorPool::~ProcessorPool() {
 }
 
 bool ProcessorPool::registerObject(const std::shared_ptr<ManagedObject> obj) {
+    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
     if (m_objCount >= m_procCapacity * m_maxProc)
         return false;
     auto procPtr = getLeastLoadProc();
@@ -186,8 +197,7 @@ bool ProcessorPool::registerObject(const std::shared_ptr<ManagedObject> obj) {
         if (procPtr->addObject(obj)) {
             ++m_objCount;
             if (!adjustProcessors())
-                server::debug::logln(server::debug::LogLevel::ERROR,
-                                     "Error while adjusting processor count");
+                server::debug::logln("Error while adjusting processor count");
             return true;
         }
     return false;
@@ -197,7 +207,8 @@ bool ProcessorPool::removeObject(std::shared_ptr<ManagedObject> obj) {
     return removeObject(obj->getID());
 }
 
-inline bool ProcessorPool::removeObject(objID objId) {
+bool ProcessorPool::removeObject(objID objId) {
+    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
     if (m_processors.empty())
         return false;
     auto foundProc = getProcessorContains(objId);
@@ -205,8 +216,7 @@ inline bool ProcessorPool::removeObject(objID objId) {
         if (foundProc->removeObject(objId)) {
             --m_objCount;
             if (!adjustProcessors())
-                server::debug::logln(server::debug::LogLevel::ERROR,
-                                     "Error while adjusting processor count");
+                server::debug::logln("Error while adjusting processor count");
             return true;
         }
     }
@@ -215,24 +225,35 @@ inline bool ProcessorPool::removeObject(objID objId) {
 
 std::shared_ptr<Processor> ProcessorPool::getProcessorContains(
     const std::shared_ptr<ManagedObject> obj) const {
+    return getProcessorContains(obj->getID());
+}
+
+std::shared_ptr<Processor> ProcessorPool::getProcessorContains(objID id) const {
+    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
     for (size_t i = 0; i < m_procCount; ++i)
-        if (m_processors[i]->contains(obj))
+        if (m_processors[i]->contains(id))
             return m_processors[i];
     return nullptr;
 }
 
-inline std::shared_ptr<Processor> ProcessorPool::getProcessorContains(
-    objID id) const {
-    return m_processors[id];
+void ProcessorPool::stopAll() {
+    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
+    for (auto& proc : m_processors)
+        if (proc->isRunning()) {
+            proc->stop();
+        }
 }
 
-void ProcessorPool::stopAll() {
-    for (auto& proc : m_processors)
-        if (proc->isRunning())
-            proc->stop();
+size_t ProcessorPool::getObjCount() const {
+    return m_objCount;
+}
+
+size_t ProcessorPool::getProcCount() const {
+    return m_procCount;
 }
 
 bool ProcessorPool::adjustProcessors() {
+    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
     loadt load = (100 * m_objCount) / (m_procCapacity * m_procCount);
     if (m_maxProc != m_procCount && load >= m_maxLoad) {
         return addProcessor();
@@ -244,13 +265,13 @@ bool ProcessorPool::adjustProcessors() {
 }
 
 bool ProcessorPool::addProcessor() {
+    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
     if (m_procCount < m_maxProc) {
         try {
             m_processors.push_back(
                 std::make_shared<Processor>(m_sleepInterval));
         } catch (std::exception& e) {
-            server::debug::logln(server::debug::LogLevel::ERROR,
-                                 "Error while emplace processor: ", e.what());
+            server::debug::logln("Error while emplace processor: ", e.what());
             return false;
         }
         ++m_procCount;
@@ -260,6 +281,7 @@ bool ProcessorPool::addProcessor() {
 }
 
 bool ProcessorPool::removeProcessor() {
+    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
     if (m_procCount <= m_minProc)
         return false;
     size_t leastLoadProcId = getLeastLoadProcId();
@@ -274,10 +296,11 @@ bool ProcessorPool::removeProcessor() {
 }
 
 bool ProcessorPool::redistributeObjects(std::shared_ptr<Processor> processor) {
+    std::unique_lock<std::recursive_mutex> poolLock(m_poolMutex);
     auto objectsToRedistribute = processor->getObjects();
     for (auto objPair : objectsToRedistribute) {
-        if (!processor->moveObject(getLeastLoadProc(),
-                                   objPair.second->getID())) {
+        auto targetProc = getLeastLoadProc();
+        if (!processor->moveObject(targetProc, objPair.second->getID())) {
             return false;
         }
     }
@@ -285,10 +308,12 @@ bool ProcessorPool::redistributeObjects(std::shared_ptr<Processor> processor) {
 }
 
 std::shared_ptr<Processor> ProcessorPool::getLeastLoadProc() {
+    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
     return m_processors[getLeastLoadProcId()];
 }
 
-inline std::shared_ptr<Processor> ProcessorPool::getProc(size_t id) {
+std::shared_ptr<Processor> ProcessorPool::getProc(size_t id) {
+    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
     if (id < m_procCount)
         return m_processors[id];
     else
@@ -296,6 +321,7 @@ inline std::shared_ptr<Processor> ProcessorPool::getProc(size_t id) {
 }
 
 size_t ProcessorPool::getLeastLoadProcId() {
+    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
     uint8_t leastLoad = 255;
     size_t leastLoadProcId = 0;
     for (size_t i = 0; i < m_processors.size(); ++i) {
@@ -308,7 +334,8 @@ size_t ProcessorPool::getLeastLoadProcId() {
     return leastLoadProcId;
 }
 
-ProcessorPool::Builder::Builder() {
+std::vector<std::shared_ptr<Processor>> ProcessorPool::getProcessors() {
+    return m_processors;
 }
 
 ProcessorPool::Builder& ProcessorPool::Builder::setMinimumProcessors(
@@ -346,9 +373,9 @@ ProcessorPool::Builder& ProcessorPool::Builder::setMinimumLoad(loadt minLoad) {
 }
 
 ProcessorPool ProcessorPool::Builder::build() {
-    ProcessorPool pool(m_minProc, m_maxProc, m_procCapacity, m_sleepInterval,
-                       m_maxLoad, m_minLoad);
+    ProcessorPool pool(m_maxProc, m_minProc, m_procCapacity, m_maxLoad,
+                       m_minLoad, m_sleepInterval);
     return pool;
 }
 
-}  // namespace ioteye
+}  // namespace ioteye::utils

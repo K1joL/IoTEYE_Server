@@ -5,14 +5,13 @@
 #include <chrono>
 #include <common/logging.hpp>
 #include <functional>
-#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
 #include <unordered_map>
 #include <vector>
 
-namespace ioteye {
+namespace ioteye::utils {
 using ms = std::chrono::milliseconds;
 using loadt = uint8_t;
 using objID = size_t;
@@ -20,6 +19,7 @@ using objID = size_t;
 class ManagedObject {
 public:
     ManagedObject();
+    virtual ~ManagedObject() = default;
     objID getID() const;
     virtual void process();
 
@@ -60,6 +60,7 @@ public:
     bool isReady() const;
 
 private:
+    friend class ProcessorPool;
     ObjectsMap m_objects;
     ms m_sleepInterval;
     mutable std::shared_mutex m_mutex;
@@ -68,13 +69,46 @@ private:
     std::thread m_thread;
 };
 
+/**
+ * @class ProcessorPool
+ * @brief A class that manages a Processors.
+ *
+ * @details This class is used to create and manage Processors .
+ * Processors are used to process expirable objects. There are automatic load
+ * managment functions in this class operable by maxLoad and minLoad.
+ */
 class ProcessorPool {
 public:
+    /**
+     * @brief Default Constructor
+     */
     ProcessorPool() = default;
-    ProcessorPool(size_t minProc, size_t maxProc, size_t procCapacity,
-                  ms sleepInterval, loadt maxLoad, loadt minLoad);
+    /**
+     * @brief ProcessorPool Constructor
+     *
+     * @param maxProc Maximum number of threads (Processors) to
+     * cefficientlyreate
+     * @param minProc Minimum number of worker threads (Processors)
+     * @param procCapacity Maximum objects per thread
+     * @param maxLoad Maximum percentage of objects to process
+     * @param minLoad Minimum percentage of objects to process
+     * @param sleepInterval The time to check the status of objects
+     */
+    ProcessorPool(size_t maxProc, size_t minProc, size_t procCapacity,
+                  loadt maxLoad, loadt minLoad, ms sleepInterval);
+    /**
+     * @brief Copy Constructor
+     */
     ProcessorPool(ProcessorPool&& other);
+    /**
+     * @brief Assignment operator
+     */
     ProcessorPool& operator=(ProcessorPool&& other);
+    /**
+     * @brief ProcessorPool destructor
+     *
+     * Stops all processors.
+     */
     ~ProcessorPool();
 
     bool registerObject(std::shared_ptr<ManagedObject> obj);
@@ -84,8 +118,10 @@ public:
         const std::shared_ptr<ManagedObject> obj) const;
     std::shared_ptr<Processor> getProcessorContains(objID id) const;
     void stopAll();
+    size_t getObjCount() const;
+    size_t getProcCount() const;
 
-private:
+protected:
     bool adjustProcessors();
     bool addProcessor();
     bool removeProcessor();
@@ -93,11 +129,12 @@ private:
     std::shared_ptr<Processor> getLeastLoadProc();
     std::shared_ptr<Processor> getProc(size_t id);
     size_t getLeastLoadProcId();
+    std::vector<std::shared_ptr<Processor>> getProcessors();
 
 public:
     class Builder {
     public:
-        Builder();
+        Builder() = default;
         Builder& setMinimumProcessors(size_t minProc);
         Builder& setMaximumProcessors(size_t maxProc);
         Builder& setProcessorsCapacity(size_t procCapacity);
@@ -116,18 +153,33 @@ public:
     };
 
 private:
+    // External
+
+    /// @brief Maximum number of worker threads for this pool
     size_t m_maxProc = 128;
+    /// @brief Minimum number of worker threads
     size_t m_minProc = 1;
+    /// @brief Maximum objects per thread
     size_t m_procCapacity = 64;
-    size_t m_procCount = 0;
-    size_t m_objCount = 0;
+    /// @brief Maximum percentage of objects to process. If greater, thread will
+    /// be created.
     loadt m_maxLoad = 80;
+    /// @brief Minimum percentage of objects to process. If less, thread will be
+    /// removed and objects redistributed.
     loadt m_minLoad = 40;
+    /// @brief Sleep time after object processing
     ms m_sleepInterval = ms(10);
+    // Internal
+
+    /// @brief Processor counter
+    size_t m_procCount = 0;
+    /// @brief Object counter
+    size_t m_objCount = 0;
     std::vector<std::shared_ptr<Processor>> m_processors;
-    std::vector<std::thread> m_threads;
+    /// @brief Mutex to sync pool operations
+    mutable std::recursive_mutex m_poolMutex;
 };
 
-}  // namespace ioteye
+}  // namespace ioteye::utils
 
 #endif  // !IOTEYE_PROCESSOR_POOL_HPP
