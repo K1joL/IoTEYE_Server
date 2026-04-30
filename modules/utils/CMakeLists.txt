@@ -1,6 +1,7 @@
 add_library(ioteye_utils STATIC
     src/processorPool.cpp
     src/timerScheduler.cpp
+    src/managedObject.cpp
 )
 
 target_include_directories(ioteye_utils

@@ -29,6 +29,8 @@ using ao = ioteye::AdminOptions;
 
 namespace ioteye {
 
+using namespace ioteye::types;
+
 bool DeviceFileManager::saveFile() {
     json j;
     for (const auto& pair : m_devicesMap) {
@@ -66,21 +68,21 @@ bool DeviceFileManager::loadFile() {
     json j = json::parse(fileContent);
     int count = 0;
     for (const auto& device : j) {
-        std::unordered_map<uint16_t, int> intPins;
-        std::unordered_map<uint16_t, double> doublePins;
-        std::unordered_map<uint16_t, std::string> stringPins;
-        std::unordered_map<uint16_t, uint8_t> pinsType;
+        pinsIntMap intPins;
+        pinsDoubleMap doublePins;
+        pinsStringMap stringPins;
+        pinsTypeMap pinsType;
 
         for (const auto& pin : device["intPins"]) {
-            pinsType[pin[0]] = Device::ContainerID::INTID;
+            pinsType[pin[0]] = types::ContainerID::INTID;
             intPins[pin[0]] = pin[1];
         }
         for (const auto& pin : device["doublePins"]) {
-            pinsType[pin[0]] = Device::ContainerID::DOUBLEID;
+            pinsType[pin[0]] = types::ContainerID::DOUBLEID;
             doublePins[pin[0]] = pin[1];
         }
         for (const auto& pin : device["stringPins"]) {
-            pinsType[pin[0]] = Device::ContainerID::STRINGID;
+            pinsType[pin[0]] = types::ContainerID::STRINGID;
             stringPins[pin[0]] = pin[1];
         }
 
@@ -103,8 +105,9 @@ bool DeviceFileManager::loadFile() {
         // server::debug::log(newDevice->getStringPins().size());
         // server::debug::log(newDevice->getDoublePins().size());
         ++count;
-        ioteye::server::debug::logStatus("Device loading ", count, '/', j.size(),
-                                   emplaceIt.second ? " Success" : "Failed");
+        ioteye::server::debug::logStatus(
+            "Device loading ", count, '/', j.size(),
+            emplaceIt.second ? " Success" : "Failed");
     }
     return true;
 }

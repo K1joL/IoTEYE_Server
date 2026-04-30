@@ -7,6 +7,8 @@ target_include_directories(ioteye_device_manager
 
 target_link_libraries(ioteye_device_manager
     INTERFACE
+    ioteye::utils
+    ioteye::common
     ioteye::device
     ioteye::persistence
     Threads::Threads

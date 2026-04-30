@@ -29,164 +29,158 @@
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <common/types.hpp>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <utils/managedObject.hpp>
 
 namespace ioteye {
-using ms = std::chrono::milliseconds;
-using chronoClock = std::chrono::high_resolution_clock;
-using DeviceID = uint64_t;
-using pinsTypesMap = std::unordered_map<uint16_t, uint8_t>;
-using pinsStringMap = std::unordered_map<uint16_t, std::string>;
-using pinsIntMap = std::unordered_map<uint16_t, int>;
-using pinsDoubleMap = std::unordered_map<uint16_t, double>;
 
 struct DeviceParams {
     std::string token = "token";
-    DeviceID id = 0;
-    std::array<uint16_t, 3> delays{0, 0, 0};
+    types::DeviceID id = 0;
+    std::array<types::delayMs, 3> delays{0, 0, 0};
     bool deleteAfterDeath = false;
-    pinsTypesMap pinsTypes;
-    pinsStringMap stringPins;
-    pinsIntMap intPins;
-    pinsDoubleMap doublePins;
-    uint16_t maxPins = 0;
+    types::pinsTypeMap pinsTypes;
+    types::pinsStringMap stringPins;
+    types::pinsIntMap intPins;
+    types::pinsDoubleMap doublePins;
+    types::pinsQuantity maxPins = 0;
 };
 
-class Device {
+class Device : utils::ManagedObject {
 public:
     Device();
-    Device(uint16_t outdatedDelay, uint16_t offlineDelay, uint16_t deadDelay,
-           uint16_t maxPins, bool deleteAfterOffline);
+    Device(types::delayMs outdatedDelay, types::delayMs offlineDelay,
+           types::delayMs deadDelay, types::pinsQuantity maxPins,
+           bool deleteAfterOffline);
     Device(Device&& other) noexcept;
     Device& operator=(Device&& other) noexcept;
     void generateToken();
     std::string getToken();
-    uint64_t getID();
-    uint8_t getState();
-    void changeState(uint8_t state);
+    types::DeviceID getID();
+    types::DeviceState getState() const;
+    void changeState(types::DeviceState state);
     void ping();
     ~Device();
 
+    void setOnStateChange(std::function<void(types::DeviceState)> cb);
     // Virtual pins interactions
-    int addPin(uint16_t pinNumber, const std::string& dataType,
+    int addPin(types::pinId pinNumber, const std::string& dataType,
                const std::string& defaultData);
-    int changePin(uint16_t pinNumber, const std::string& data);
-    int removePin(uint16_t pinNumber);
-    std::string getPin(uint16_t pinNumber);
-    uint16_t pinsCreated();
-    uint16_t getMaxPins();
+    int changePin(types::pinId pinNumber, const std::string& data);
+    int removePin(types::pinId pinNumber);
+    std::string getPin(types::pinId pinNumber);
+    types::pinsQuantity pinsCreated();
+    types::pinsQuantity getMaxPins();
     // Getters for pins maps
-    const std::unordered_map<uint16_t, uint8_t>& getPinsTypes() const;
-    const std::unordered_map<uint16_t, int>& getIntPins() const;
-    const std::unordered_map<uint16_t, double>& getDoublePins() const;
-    const std::unordered_map<uint16_t, std::string>& getStringPins() const;
-
-    // Virtual pins data type IDs
-    enum ContainerID { INTID = 105, DOUBLEID = 100, STRINGID = 115 };
+    const types::pinsTypeMap& getPinsTypes() const;
+    const types::pinsIntMap& getIntPins() const;
+    const types::pinsDoubleMap& getDoublePins() const;
+    const types::pinsStringMap& getStringPins() const;
 
 private:
-    void adjustIdSequence(DeviceID id);
+    void adjustIdSequence(types::DeviceID id);
 
 private:
     class StateTimer {
     public:
-        StateTimer(std::function<void(uint8_t)> callback, std::mutex& mutex);
-        StateTimer(std::function<void(uint8_t)> callback, std::mutex& mutex,
-                   ms offlineDelay, ms outdatedDelay);
+        StateTimer(std::function<void(types::DeviceState)> callback,
+                   std::mutex& mutex);
+        StateTimer(std::function<void(types::DeviceState)> callback,
+                   std::mutex& mutex, types::ms offlineDelay,
+                   types::ms outdatedDelay);
         ~StateTimer();
         void threadLoop();
         void ping();
         void setPingFalse();
         bool wasPing();
         void stop();
-        void setDelays(ms outdatedDelay, ms offlineDelay, ms deadDelay);
-        ms getRemainingTime() const;
+        void setDelays(types::ms outdatedDelay, types::ms offlineDelay,
+                       types::ms deadDelay);
+        types::ms getRemainingTime() const;
         bool isStopped() const;
-        void changeState(uint8_t newState);
-        ms getOfflineDelay();
-        ms getOutdatedDelay();
+        void changeState(types::DeviceState newState);
+        types::ms getOfflineDelay();
+        types::ms getOutdatedDelay();
 
     private:
         std::atomic<bool> m_wasPing{false};
         std::mutex& m_changingMutex;
-        ms m_outdatedDelay = ms(500);
-        ms m_offlineDelay = ms(1000);
-        ms m_deadDelay = ms(10000);
-        chronoClock::time_point m_start = chronoClock::now();
-        std::function<void(uint8_t)> m_cbChangeState;
+        types::ms m_outdatedDelay = types::ms(500);
+        types::ms m_offlineDelay = types::ms(1000);
+        types::ms m_deadDelay = types::ms(10000);
+        types::chronoClock::time_point m_start = types::chronoClock::now();
+        std::function<void(types::DeviceState)> m_cbChangeState;
         std::atomic<bool> m_isStopped{false};
         std::thread m_timerThread;
         // TODO: make currentState be set to the default value
-        uint8_t m_currentState = OFFLINE;
+        types::DeviceState m_currentState = types::OFFLINE;
     };
 
 public:
     class Builder {
     public:
         Builder();
-        Builder& setOutdatedDelay(uint16_t outdatedDelay);
-        Builder& setOfflineDelay(uint16_t offlineDelay);
-        Builder& setDeadDelay(uint16_t deadDelay);
-        Builder& setMaxPins(uint16_t maxPins);
-        Builder& setID(uint64_t id);
+        Builder& setOutdatedDelay(types::delayMs outdatedDelay);
+        Builder& setOfflineDelay(types::delayMs offlineDelay);
+        Builder& setDeadDelay(types::delayMs deadDelay);
+        Builder& setMaxPins(types::pinsQuantity maxPins);
+        Builder& setID(types::DeviceID id);
         Builder& setToken(const std::string& token);
-        Builder& setState(uint8_t state);
-        Builder& setIntPin(uint16_t pinNumber, int value);
-        Builder& setDoublePin(uint16_t pinNumber, double value);
-        Builder& setStringPin(uint16_t pinNumber, const std::string& value);
-        Builder& setPinsTypePin(uint16_t pinNumber, uint8_t value);
-        Builder& setIntPinMap(std::unordered_map<uint16_t, int>&& intPinMap);
-        Builder& setDoublePinMap(
-            std::unordered_map<uint16_t, double>&& doublePinMap);
-        Builder& setStringPinMap(
-            std::unordered_map<uint16_t, std::string>&& stringPinMap);
-        Builder& setPinsTypeMap(
-            std::unordered_map<uint16_t, uint8_t>&& pinsTypeMap);
+        Builder& setState(types::DeviceState state);
+        Builder& setIntPin(types::pinId pinNumber, int value);
+        Builder& setDoublePin(types::pinId pinNumber, double value);
+        Builder& setStringPin(types::pinId pinNumber, const std::string& value);
+        Builder& setPinsTypePin(types::pinId pinNumber,
+                                types::ContainerID value);
+        Builder& setIntPinMap(
+            std::unordered_map<types::pinId, int>&& intPinMap);
+        Builder& setDoublePinMap(types::pinsDoubleMap&& doublePinMap);
+        Builder& setStringPinMap(types::pinsStringMap&& stringPinMap);
+        Builder& setPinsTypeMap(types::pinsTypeMap&& pinsTypeMap);
         Builder& setDeleteAfterOffline(bool deleteAfterOffline);
         Device build();
 
     private:
-        uint16_t m_outdatedDelay;
-        uint16_t m_offlineDelay;
-        uint16_t m_deadDelay;
-        uint16_t m_maxPins;
-        uint64_t m_id;
+        types::delayMs m_outdatedDelay;
+        types::delayMs m_offlineDelay;
+        types::delayMs m_deadDelay;
+        types::pinsQuantity m_maxPins;
+        types::DeviceID m_id;
         std::string m_token;
-        uint8_t m_state;
-        std::unordered_map<uint16_t, uint8_t> m_pinsType;
-        std::unordered_map<uint16_t, int> m_intPins;
-        std::unordered_map<uint16_t, double> m_doublePins;
-        std::unordered_map<uint16_t, std::string> m_stringPins;
+        types::DeviceState m_state;
+        std::unordered_map<types::pinId, types::ContainerID> m_pinsType;
+        std::unordered_map<types::pinId, int> m_intPins;
+        std::unordered_map<types::pinId, double> m_doublePins;
+        std::unordered_map<types::pinId, std::string> m_stringPins;
         bool m_deleteAfterOffline = false;
     };
 
 private:
-    static uint64_t m_idSequence;
-    uint64_t m_id;
+    static types::DeviceID m_idSequence;
+    types::DeviceID m_id;
     std::string m_token;
-    std::atomic<uint8_t> m_state{OFFLINE};
+    std::atomic<types::DeviceState> m_state{types::OFFLINE};
     std::mutex m_timerMutex;
     std::shared_ptr<StateTimer> m_stateTimer;
 
     // Virtual pins data
-    std::unordered_map<uint16_t, uint8_t> m_pinsType;
-    std::unordered_map<uint16_t, int> m_intPins;
-    std::unordered_map<uint16_t, double> m_doublePins;
-    std::unordered_map<uint16_t, std::string> m_stringPins;
-    uint16_t m_pinsCounter = 0;
-    uint16_t m_maxPins = 255;
+    std::unordered_map<types::pinId, types::ContainerID> m_pinsType;
+    std::unordered_map<types::pinId, int> m_intPins;
+    std::unordered_map<types::pinId, double> m_doublePins;
+    std::unordered_map<types::pinId, std::string> m_stringPins;
+    types::pinsQuantity m_pinsCounter = 0;
+    types::pinsQuantity m_maxPins = 255;
     bool m_deleteAfterOffline = false;
-
-public:
-    enum STATES { ONLINE, OFFLINE, OUTDATED, DEAD, MAX_STATES };
+    std::function<void(types::DeviceState)> m_onStateChange;
 };
 
 using DevicePtr = std::shared_ptr<Device>;
 
-}  // namespace ioteye
+}  // namespace ioteye::device
 
-#endif  //! DEVICE_H
+#endif  // DEVICE_H

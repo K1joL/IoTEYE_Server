@@ -1,19 +1,9 @@
 #include <utils/processorPool.hpp>
 
 namespace ioteye::utils {
-size_t ManagedObject::m_idSequence = 1;
-
-ManagedObject::ManagedObject() {
-    m_id = m_idSequence;
-    ++m_idSequence;
-}
-
-objID ManagedObject::getID() const {
-    return m_id;
-}
-
-void ManagedObject::process() {
-}
+using namespace ioteye::types;
+using ioteye::server::debug::LogLevel;
+using namespace ioteye::server;
 
 Processor::Processor(std::chrono::milliseconds sleepInterval)
     : m_sleepInterval(sleepInterval) {
@@ -197,7 +187,8 @@ bool ProcessorPool::registerObject(const std::shared_ptr<ManagedObject> obj) {
         if (procPtr->addObject(obj)) {
             ++m_objCount;
             if (!adjustProcessors())
-                server::debug::logln("Error while adjusting processor count");
+                debug::logln(LogLevel::ERROR,
+                             "Error while adjusting processor count");
             return true;
         }
     return false;
@@ -216,7 +207,8 @@ bool ProcessorPool::removeObject(objID objId) {
         if (foundProc->removeObject(objId)) {
             --m_objCount;
             if (!adjustProcessors())
-                server::debug::logln("Error while adjusting processor count");
+                debug::logln(LogLevel::ERROR,
+                             "Error while adjusting processor count");
             return true;
         }
     }
@@ -271,7 +263,8 @@ bool ProcessorPool::addProcessor() {
             m_processors.push_back(
                 std::make_shared<Processor>(m_sleepInterval));
         } catch (std::exception& e) {
-            server::debug::logln("Error while emplace processor: ", e.what());
+            debug::logln(LogLevel::ERROR,
+                         "Error while emplace processor: ", e.what());
             return false;
         }
         ++m_procCount;

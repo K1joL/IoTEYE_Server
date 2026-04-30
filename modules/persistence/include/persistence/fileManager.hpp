@@ -25,6 +25,7 @@
 #define IOTEYE_FILE_MANAGER_H
 
 #include <common/logging.hpp>
+#include <common/types.hpp>
 #include <condition_variable>
 #include <device/device.hpp>
 #include <fstream>
@@ -85,14 +86,14 @@ protected:
 class DeviceFileManager : public IFileManager {
 public:
     DeviceFileManager(std::shared_ptr<FileHandler> fileHandler,
-                      std::unordered_map<uint64_t, DevicePtr>& devices)
+                      std::unordered_map<uint64_t, types::DevicePtr>& devices)
         : IFileManager(fileHandler), m_devicesMap(devices) {
     }
     bool saveFile() override;
     bool loadFile() override;
 
 private:
-    std::unordered_map<uint64_t, DevicePtr>& m_devicesMap;
+    std::unordered_map<uint64_t, types::DevicePtr>& m_devicesMap;
 };
 
 }  // namespace ioteye

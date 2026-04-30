@@ -4,36 +4,21 @@
 #include <atomic>
 #include <chrono>
 #include <common/logging.hpp>
+#include <common/types.hpp>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
 #include <unordered_map>
+#include <utils/managedObject.hpp>
 #include <vector>
 
 namespace ioteye::utils {
-using ms = std::chrono::milliseconds;
-using loadt = uint8_t;
-using objID = size_t;
-
-class ManagedObject {
-public:
-    ManagedObject();
-    virtual ~ManagedObject() = default;
-    objID getID() const;
-    virtual void process();
-
-protected:
-    objID m_id;
-    mutable std::shared_mutex m_sharedMutex;
-
-private:
-    static size_t m_idSequence;
-};
 
 class Processor {
     using ObjectsMap =
-        std::unordered_map<objID, std::shared_ptr<ManagedObject>>;
+        std::unordered_map<types::objID, std::shared_ptr<utils::ManagedObject>>;
 
 public:
     Processor(std::chrono::milliseconds sleepInterval);
@@ -45,16 +30,16 @@ public:
     Processor& operator=(const Processor&) = delete;
 
     void run();
-    bool addObject(std::shared_ptr<ManagedObject> obj);
-    bool removeObject(std::shared_ptr<ManagedObject> obj);
-    bool removeObject(objID id);
-    bool moveObject(std::shared_ptr<Processor> other, objID id);
+    bool addObject(std::shared_ptr<utils::ManagedObject> obj);
+    bool removeObject(std::shared_ptr<utils::ManagedObject> obj);
+    bool removeObject(types::objID id);
+    bool moveObject(std::shared_ptr<Processor> other, types::objID id);
     ObjectsMap& getObjects();
     void setReady(bool isReady);
     void stop();
 
-    bool contains(std::shared_ptr<ManagedObject> obj) const;
-    bool contains(objID id) const;
+    bool contains(std::shared_ptr<utils::ManagedObject> obj) const;
+    bool contains(types::objID id) const;
     size_t getSize() const;
     bool isRunning() const;
     bool isReady() const;
@@ -62,7 +47,7 @@ public:
 private:
     friend class ProcessorPool;
     ObjectsMap m_objects;
-    ms m_sleepInterval;
+    types::ms m_sleepInterval;
     mutable std::shared_mutex m_mutex;
     std::atomic<bool> m_running{true};
     std::atomic<bool> m_isReady{true};
@@ -95,7 +80,8 @@ public:
      * @param sleepInterval The time to check the status of objects
      */
     ProcessorPool(size_t maxProc, size_t minProc, size_t procCapacity,
-                  loadt maxLoad, loadt minLoad, ms sleepInterval);
+                  types::loadt maxLoad, types::loadt minLoad,
+                  types::ms sleepInterval);
     /**
      * @brief Copy Constructor
      */
@@ -111,12 +97,12 @@ public:
      */
     ~ProcessorPool();
 
-    bool registerObject(std::shared_ptr<ManagedObject> obj);
-    bool removeObject(std::shared_ptr<ManagedObject> obj);
-    bool removeObject(objID id);
+    bool registerObject(std::shared_ptr<utils::ManagedObject> obj);
+    bool removeObject(std::shared_ptr<utils::ManagedObject> obj);
+    bool removeObject(types::objID id);
     std::shared_ptr<Processor> getProcessorContains(
-        const std::shared_ptr<ManagedObject> obj) const;
-    std::shared_ptr<Processor> getProcessorContains(objID id) const;
+        const std::shared_ptr<utils::ManagedObject> obj) const;
+    std::shared_ptr<Processor> getProcessorContains(types::objID id) const;
     void stopAll();
     size_t getObjCount() const;
     size_t getProcCount() const;
@@ -138,18 +124,18 @@ public:
         Builder& setMinimumProcessors(size_t minProc);
         Builder& setMaximumProcessors(size_t maxProc);
         Builder& setProcessorsCapacity(size_t procCapacity);
-        Builder& setSleepInterval(ms sleepInterval);
-        Builder& setMaximumLoad(loadt maxLoad);
-        Builder& setMinimumLoad(loadt minLoad);
+        Builder& setSleepInterval(types::ms sleepInterval);
+        Builder& setMaximumLoad(types::loadt maxLoad);
+        Builder& setMinimumLoad(types::loadt minLoad);
         ProcessorPool build();
 
     private:
         size_t m_maxProc = 128;
         size_t m_minProc = 1;
         size_t m_procCapacity = 64;
-        loadt m_maxLoad = 80;
-        loadt m_minLoad = 40;
-        ms m_sleepInterval = ms(10);
+        types::loadt m_maxLoad = 80;
+        types::loadt m_minLoad = 40;
+        types::ms m_sleepInterval = types::ms(10);
     };
 
 private:
@@ -163,12 +149,12 @@ private:
     size_t m_procCapacity = 64;
     /// @brief Maximum percentage of objects to process. If greater, thread will
     /// be created.
-    loadt m_maxLoad = 80;
+    types::loadt m_maxLoad = 80;
     /// @brief Minimum percentage of objects to process. If less, thread will be
     /// removed and objects redistributed.
-    loadt m_minLoad = 40;
+    types::loadt m_minLoad = 40;
     /// @brief Sleep time after object processing
-    ms m_sleepInterval = ms(10);
+    types::ms m_sleepInterval = types::ms(10);
     // Internal
 
     /// @brief Processor counter
