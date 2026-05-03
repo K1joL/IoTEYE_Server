@@ -29,8 +29,7 @@ set(LIB_LIST
     ioteye::persistence
     # ioteye::device_manager
     ioteye::server
-    ioteyeserver
-    asio::asio
+    ioteyeserver::ioteyeserver
     Threads::Threads
     ${Boost_LIBRARIES}
 )

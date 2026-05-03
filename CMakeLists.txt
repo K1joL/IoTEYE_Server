@@ -33,7 +33,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(ENABLE_LOGGING)
 endif()
 
-option(IOTEYE_BUILD_CLIENT "Build the client application" OFF)
 option(IOTEYE_SERVER_ENABLE_TESTS "Enable tests compilation" OFF)
 
 # --- External Dependencies ---
@@ -48,9 +47,9 @@ set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "disable building examples" FORCE)
 FetchContent_MakeAvailable(jwt-cpp)
 
 # System dependencies
-find_package(asio REQUIRED)
 find_package(ioteyeserver REQUIRED)
 find_package(Threads REQUIRED)
+find_package(Boost 1.88.0 REQUIRED)
 find_package(Boost 1.88.0 REQUIRED COMPONENTS program_options)
 find_package(nlohmann_json REQUIRED)
 
@@ -66,20 +65,6 @@ add_subdirectory(modules/persistence)
 # add_subdirectory(modules/device_manager)
 add_subdirectory(modules/server)
 add_subdirectory(app)
-# --- Main Executable ---
-# add_executable(main app/app.cpp)
-# target_link_libraries(main PRIVATE
-#     ioteye::common
-#     ioteye::utils
-#     ioteye::device
-#     ioteye::persistence
-#     # ioteye::device_manager
-#     ioteye::server
-#     ioteyeserver
-#     asio::asio
-#     Threads::Threads
-#     ${Boost_LIBRARIES}
-# )
 
 # --- Tests ---
 if(IOTEYE_SERVER_ENABLE_TESTS)

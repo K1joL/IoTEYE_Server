@@ -21,7 +21,6 @@ function(add_ioteye_test TEST_SOURCE)
         jwt-cpp::jwt-cpp
         nlohmann_json::nlohmann_json
         Threads::Threads
-        asio::asio
         ${Boost_LIBRARIES}
     )
 

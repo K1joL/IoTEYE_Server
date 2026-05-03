@@ -16,7 +16,7 @@ target_link_libraries(ioteye_server
     # ioteye::device_manager
     ioteye::persistence
     PRIVATE
-    ioteyeserver
+    ioteyeserver::ioteyeserver
     jwt-cpp::jwt-cpp
 )
 
