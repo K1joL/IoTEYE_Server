@@ -42,20 +42,20 @@ namespace ioteye {
 struct DeviceParams {
     std::string token = "token";
     types::DeviceID id = 0;
-    std::array<types::delayMs, 3> delays{0, 0, 0};
+    std::array<types::DelayMs, 3> delays{0, 0, 0};
     bool deleteAfterDeath = false;
-    types::pinsTypeMap pinsTypes;
-    types::pinsStringMap stringPins;
-    types::pinsIntMap intPins;
-    types::pinsDoubleMap doublePins;
-    types::pinsQuantity maxPins = 0;
+    types::PinsTypeMap pinsTypes;
+    types::PinsStringMap stringPins;
+    types::PinsIntMap intPins;
+    types::PinsDoubleMap doublePins;
+    types::PinsQuantity maxPins = 0;
 };
 
 class Device : utils::ManagedObject {
 public:
     Device();
-    Device(types::delayMs outdatedDelay, types::delayMs offlineDelay,
-           types::delayMs deadDelay, types::pinsQuantity maxPins,
+    Device(types::DelayMs outdatedDelay, types::DelayMs offlineDelay,
+           types::DelayMs deadDelay, types::PinsQuantity maxPins,
            bool deleteAfterOffline);
     Device(Device&& other) noexcept;
     Device& operator=(Device&& other) noexcept;
@@ -69,18 +69,18 @@ public:
 
     void setOnStateChange(std::function<void(types::DeviceState)> cb);
     // Virtual pins interactions
-    int addPin(types::pinId pinNumber, const std::string& dataType,
+    int addPin(types::PinId pinNumber, const std::string& dataType,
                const std::string& defaultData);
-    int changePin(types::pinId pinNumber, const std::string& data);
-    int removePin(types::pinId pinNumber);
-    std::string getPin(types::pinId pinNumber);
-    types::pinsQuantity pinsCreated();
-    types::pinsQuantity getMaxPins();
+    int changePin(types::PinId pinNumber, const std::string& data);
+    int removePin(types::PinId pinNumber);
+    std::string getPin(types::PinId pinNumber);
+    types::PinsQuantity pinsCreated();
+    types::PinsQuantity getMaxPins();
     // Getters for pins maps
-    const types::pinsTypeMap& getPinsTypes() const;
-    const types::pinsIntMap& getIntPins() const;
-    const types::pinsDoubleMap& getDoublePins() const;
-    const types::pinsStringMap& getStringPins() const;
+    const types::PinsTypeMap& getPinsTypes() const;
+    const types::PinsIntMap& getIntPins() const;
+    const types::PinsDoubleMap& getDoublePins() const;
+    const types::PinsStringMap& getStringPins() const;
 
 private:
     void adjustIdSequence(types::DeviceID id);
@@ -113,7 +113,7 @@ private:
         types::ms m_outdatedDelay = types::ms(500);
         types::ms m_offlineDelay = types::ms(1000);
         types::ms m_deadDelay = types::ms(10000);
-        types::chronoClock::time_point m_start = types::chronoClock::now();
+        types::ChronoClock::time_point m_start = types::ChronoClock::now();
         std::function<void(types::DeviceState)> m_cbChangeState;
         std::atomic<bool> m_isStopped{false};
         std::thread m_timerThread;
@@ -125,38 +125,38 @@ public:
     class Builder {
     public:
         Builder();
-        Builder& setOutdatedDelay(types::delayMs outdatedDelay);
-        Builder& setOfflineDelay(types::delayMs offlineDelay);
-        Builder& setDeadDelay(types::delayMs deadDelay);
-        Builder& setMaxPins(types::pinsQuantity maxPins);
+        Builder& setOutdatedDelay(types::DelayMs outdatedDelay);
+        Builder& setOfflineDelay(types::DelayMs offlineDelay);
+        Builder& setDeadDelay(types::DelayMs deadDelay);
+        Builder& setMaxPins(types::PinsQuantity maxPins);
         Builder& setID(types::DeviceID id);
         Builder& setToken(const std::string& token);
         Builder& setState(types::DeviceState state);
-        Builder& setIntPin(types::pinId pinNumber, int value);
-        Builder& setDoublePin(types::pinId pinNumber, double value);
-        Builder& setStringPin(types::pinId pinNumber, const std::string& value);
-        Builder& setPinsTypePin(types::pinId pinNumber,
+        Builder& setIntPin(types::PinId pinNumber, int value);
+        Builder& setDoublePin(types::PinId pinNumber, double value);
+        Builder& setStringPin(types::PinId pinNumber, const std::string& value);
+        Builder& setPinsTypePin(types::PinId pinNumber,
                                 types::ContainerID value);
         Builder& setIntPinMap(
-            std::unordered_map<types::pinId, int>&& intPinMap);
-        Builder& setDoublePinMap(types::pinsDoubleMap&& doublePinMap);
-        Builder& setStringPinMap(types::pinsStringMap&& stringPinMap);
-        Builder& setPinsTypeMap(types::pinsTypeMap&& pinsTypeMap);
+            std::unordered_map<types::PinId, int>&& intPinMap);
+        Builder& setDoublePinMap(types::PinsDoubleMap&& doublePinMap);
+        Builder& setStringPinMap(types::PinsStringMap&& stringPinMap);
+        Builder& setPinsTypeMap(types::PinsTypeMap&& pinsTypeMap);
         Builder& setDeleteAfterOffline(bool deleteAfterOffline);
         Device build();
 
     private:
-        types::delayMs m_outdatedDelay;
-        types::delayMs m_offlineDelay;
-        types::delayMs m_deadDelay;
-        types::pinsQuantity m_maxPins;
+        types::DelayMs m_outdatedDelay;
+        types::DelayMs m_offlineDelay;
+        types::DelayMs m_deadDelay;
+        types::PinsQuantity m_maxPins;
         types::DeviceID m_id;
         std::string m_token;
         types::DeviceState m_state;
-        std::unordered_map<types::pinId, types::ContainerID> m_pinsType;
-        std::unordered_map<types::pinId, int> m_intPins;
-        std::unordered_map<types::pinId, double> m_doublePins;
-        std::unordered_map<types::pinId, std::string> m_stringPins;
+        std::unordered_map<types::PinId, types::ContainerID> m_pinsType;
+        std::unordered_map<types::PinId, int> m_intPins;
+        std::unordered_map<types::PinId, double> m_doublePins;
+        std::unordered_map<types::PinId, std::string> m_stringPins;
         bool m_deleteAfterOffline = false;
     };
 
@@ -169,17 +169,15 @@ private:
     std::shared_ptr<StateTimer> m_stateTimer;
 
     // Virtual pins data
-    std::unordered_map<types::pinId, types::ContainerID> m_pinsType;
-    std::unordered_map<types::pinId, int> m_intPins;
-    std::unordered_map<types::pinId, double> m_doublePins;
-    std::unordered_map<types::pinId, std::string> m_stringPins;
-    types::pinsQuantity m_pinsCounter = 0;
-    types::pinsQuantity m_maxPins = 255;
+    std::unordered_map<types::PinId, types::ContainerID> m_pinsType;
+    std::unordered_map<types::PinId, int> m_intPins;
+    std::unordered_map<types::PinId, double> m_doublePins;
+    std::unordered_map<types::PinId, std::string> m_stringPins;
+    types::PinsQuantity m_pinsCounter = 0;
+    types::PinsQuantity m_maxPins = 255;
     bool m_deleteAfterOffline = false;
     std::function<void(types::DeviceState)> m_onStateChange;
 };
-
-using DevicePtr = std::shared_ptr<Device>;
 
 }  // namespace ioteye::device
 

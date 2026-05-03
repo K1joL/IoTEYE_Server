@@ -22,14 +22,15 @@
 */
 
 #include <common/adminOptions.hpp>
-#include <persistence/fileManager.hpp>
+#include <common/logging.hpp>
 #include <iostream>
 #include <ioteyeserver.hpp>
-#include <common/logging.hpp>
+#include <persistence/fileManager.hpp>
 #include <server/serverResources.hpp>
 
 using std::cout;
 using std::endl;
+using ioteye::resource::s_idDeviceMap;
 
 int main(int argc, char** argv) {
     try {
@@ -56,8 +57,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    auto pins = std::make_shared<PinsResource>();
-    auto devices = std::make_shared<DeviceResource>();
+    auto pins = std::make_shared<ioteye::resource::PinsResource>();
+    auto devices = std::make_shared<ioteye::resource::DeviceResource>();
     ioteye::Webserver ws =
         ioteye::Webserver::Builder()
             .setTcpPort(8080)

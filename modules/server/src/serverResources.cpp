@@ -25,17 +25,18 @@
 #include <common/commands.hpp>
 #include <common/logging.hpp>
 #include <server/serverResources.hpp>
-
+namespace ioteye::resource {
 using namespace ioteye::server::debug;
 using ioteye::HttpStatusCode;
+using namespace ioteye::types;
 
-std::unordered_map<uint64_t, DevicePtr> s_idDeviceMap;
+std::unordered_map<DeviceID, DevicePtr> s_idDeviceMap;
 
 std::shared_ptr<HttpResponse> PinsResource::renderPOST(const HttpRequest& req) {
     logStatus("pins POST\n", req.getArgs());
 
     // Getting request arguments
-    uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
+    PinId pinNumber = std::stoi(req.getArg("pinNumber"));
     std::string dataType{req.getArg("dataType")};
     std::string token{req.getArg("token")};
     std::string value{req.getArg("value")};
@@ -80,7 +81,7 @@ std::shared_ptr<HttpResponse> PinsResource::renderGET(const HttpRequest& req) {
     logStatus("PINS GET\n", req.getArgs());
 
     // Getting request arguments
-    uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
+    PinId pinNumber = std::stoi(req.getArg("pinNumber"));
     std::string token{req.getArg("token")};
     std::string cmd{req.getArg("cmd")};
     std::string value{};
@@ -121,7 +122,7 @@ std::shared_ptr<HttpResponse> PinsResource::renderPUT(const HttpRequest& req) {
     logStatus("PINS PUT\n", req.getArgs());
 
     // Getting request arguments
-    uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
+    PinId pinNumber = std::stoi(req.getArg("pinNumber"));
     std::string token{req.getArg("token")};
     std::string value{req.getArg("value")};
     std::string cmd{req.getArg("cmd")};
@@ -164,7 +165,7 @@ std::shared_ptr<HttpResponse> PinsResource::renderDELETE(
     logStatus("PINS DELETE\n", req.getArgs());
 
     // Getting request arguments
-    uint8_t pinNumber = std::stoi(req.getArg("pinNumber"));
+    PinId pinNumber = std::stoi(req.getArg("pinNumber"));
     std::string token{req.getArg("token")};
     std::string cmd{req.getArg("cmd")};
 
@@ -251,7 +252,7 @@ std::shared_ptr<HttpResponse> DeviceResource::renderGET(
     // Getting request arguments
     std::string cmd{req.getArg("cmd")};
     std::string token{req.getArg("token")};
-    uint8_t deviceStatus = 0;
+    DeviceState deviceStatus = DeviceState::MAX_STATE;
 
     // existence check
     DeviceIter device;
@@ -379,3 +380,4 @@ uint16_t authCheck(const std::string& token, DeviceIter& deviceIter) {
     }
     return HttpStatusCode::OK;
 }
+}  // namespace ioteye::resource

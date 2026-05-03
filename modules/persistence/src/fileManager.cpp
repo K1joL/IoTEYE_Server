@@ -22,6 +22,7 @@
 */
 
 #include <common/adminOptions.hpp>
+#include <common/logging.hpp>
 #include <persistence/fileManager.hpp>
 
 using json = nlohmann::json;
@@ -68,10 +69,10 @@ bool DeviceFileManager::loadFile() {
     json j = json::parse(fileContent);
     int count = 0;
     for (const auto& device : j) {
-        pinsIntMap intPins;
-        pinsDoubleMap doublePins;
-        pinsStringMap stringPins;
-        pinsTypeMap pinsType;
+        PinsIntMap intPins;
+        PinsDoubleMap doublePins;
+        PinsStringMap stringPins;
+        PinsTypeMap pinsType;
 
         for (const auto& pin : device["intPins"]) {
             pinsType[pin[0]] = types::ContainerID::INTID;

@@ -25,12 +25,13 @@
 #define SERVER_RESOURCES_HPP
 
 #include <common/adminOptions.hpp>
+#include <common/types.hpp>
 #include <device/device.hpp>
 #include <ioteyeserver.hpp>
 #include <memory>
 #include <unordered_map>
 
-using namespace ioteye;
+namespace ioteye::resource {
 using ao = ioteye::AdminOptions;
 
 using std::cout;
@@ -38,9 +39,9 @@ using std::endl;
 
 #define HEADER_DEVICE_TYPE "X-Device-Type"
 
-extern std::unordered_map<uint64_t, DevicePtr> s_idDeviceMap;
+extern std::unordered_map<uint64_t, types::DevicePtr> s_idDeviceMap;
 
-using DeviceIter = std::unordered_map<uint64_t, DevicePtr>::iterator;
+using DeviceIter = std::unordered_map<uint64_t, types::DevicePtr>::iterator;
 uint16_t authCheck(const std::string& token, DeviceIter& deviceIter);
 
 class PinsResource : public HttpResourceHandler {
@@ -58,5 +59,6 @@ public:
     std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
 };
+}  // namespace ioteye::resource
 
 #endif  // SERVER_RESOURCES_HPP

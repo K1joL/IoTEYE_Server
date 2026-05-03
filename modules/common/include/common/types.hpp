@@ -20,26 +20,32 @@ using objID = size_t;
 // device
 // Virtual pins data type IDs
 enum ContainerID { INTID = 105, DOUBLEID = 100, STRINGID = 115 };
-using delayMs = std::uint16_t;
-using pinsQuantity = std::uint16_t;
-using pinId = std::uint16_t;
-using chronoClock = std::chrono::high_resolution_clock;
+using DelayMs = std::uint16_t;
+using PinsQuantity = std::uint16_t;
+using PinId = std::uint16_t;
+using ChronoClock = std::chrono::high_resolution_clock;
 using DeviceID = std::uint64_t;
-using pinsTypeMap = std::unordered_map<pinId, ContainerID>;
-using pinsStringMap = std::unordered_map<pinId, std::string>;
-using pinsIntMap = std::unordered_map<pinId, int>;
-using pinsDoubleMap = std::unordered_map<pinId, double>;
+using PinsTypeMap = std::unordered_map<PinId, ContainerID>;
+using PinsStringMap = std::unordered_map<PinId, std::string>;
+using PinsIntMap = std::unordered_map<PinId, int>;
+using PinsDoubleMap = std::unordered_map<PinId, double>;
 using DevicePtr = std::shared_ptr<Device>;
 
 struct DeviceParams {
-    delayMs outdatedDelay = 30;
-    delayMs offlineDelay = 60;
-    delayMs deadDelay = 120;
-    pinsQuantity maxPins = 255;
+    DelayMs outdatedDelay = 30;
+    DelayMs offlineDelay = 60;
+    DelayMs deadDelay = 120;
+    PinsQuantity maxPins = 255;
     bool deleteAfterDeath = false;
 };
 
-enum DeviceState : uint8_t { ONLINE = 0, OUTDATED = 1, OFFLINE = 2, DEAD = 3 };
+enum DeviceState : std::uint8_t {
+    ONLINE = 0,
+    OUTDATED = 1,
+    OFFLINE = 2,
+    DEAD = 3,
+    MAX_STATE
+};
 
 inline const char* toString(DeviceState s) {
     switch (s) {
@@ -51,6 +57,8 @@ inline const char* toString(DeviceState s) {
             return "OFFLINE";
         case DEAD:
             return "DEAD";
+        default:
+            return "UNKNOWN";
     }
     return "UNKNOWN";
 }

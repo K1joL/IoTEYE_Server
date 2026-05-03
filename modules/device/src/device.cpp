@@ -45,12 +45,12 @@ Device::StateTimer::StateTimer(std::function<void(DeviceState)> callback,
 void Device::StateTimer::threadLoop() {
     while (!m_isStopped) {
         if (m_wasPing) {
-            m_start = chronoClock::now();
+            m_start = ChronoClock::now();
             m_wasPing = false;
             changeState(DeviceState::ONLINE);
         }
 
-        auto now = chronoClock::now();
+        auto now = ChronoClock::now();
         auto elapsed = now - m_start;
 
         switch (m_currentState) {
@@ -104,7 +104,7 @@ void Device::StateTimer::setDelays(ms outdatedDelay, ms offlineDelay,
 }
 
 ms Device::StateTimer::getRemainingTime() const {
-    auto now = chronoClock::now();
+    auto now = ChronoClock::now();
     auto elapsed = now - m_start;
     auto remaining = m_offlineDelay - std::chrono::duration_cast<ms>(elapsed);
     return (remaining > ms(0)) ? remaining : ms(0);
@@ -146,8 +146,8 @@ Device::Device() {
     generateToken();
 }
 
-Device::Device(delayMs outdatedDelay, delayMs offlineDelay, delayMs deadDelay,
-               pinsQuantity maxPins, bool /* deleteAfterOffline */)
+Device::Device(DelayMs outdatedDelay, DelayMs offlineDelay, DelayMs deadDelay,
+               PinsQuantity maxPins, bool /* deleteAfterOffline */)
     : Device() {
     m_stateTimer->setDelays(ms(outdatedDelay), ms(offlineDelay), ms(deadDelay));
     m_maxPins = maxPins;
@@ -231,7 +231,7 @@ void Device::setOnStateChange(std::function<void(DeviceState)> cb) {
     m_onStateChange = std::move(cb);
 }
 
-int Device::addPin(pinId pinNumber, const std::string& dataType,
+int Device::addPin(PinId pinNumber, const std::string& dataType,
                    const std::string& defaultData) {
     // the number of pins must be less than m_maxPins
     if (m_pinsCounter == m_maxPins) {
@@ -272,7 +272,7 @@ int Device::addPin(pinId pinNumber, const std::string& dataType,
     return 0;
 }
 
-int Device::changePin(pinId pinNumber, const std::string& data) {
+int Device::changePin(PinId pinNumber, const std::string& data) {
     if (m_pinsType.find(pinNumber) == m_pinsType.end())
         return 1;
 
@@ -294,7 +294,7 @@ int Device::changePin(pinId pinNumber, const std::string& data) {
     return 0;
 }
 
-int Device::removePin(pinId pinNumber) {
+int Device::removePin(PinId pinNumber) {
     if (m_pinsType.find(pinNumber) == m_pinsType.end())
         return 1;
 
@@ -318,7 +318,7 @@ int Device::removePin(pinId pinNumber) {
     return 0;
 }
 
-std::string Device::getPin(pinId pinNumber) {
+std::string Device::getPin(PinId pinNumber) {
     if (m_pinsType.find(pinNumber) == m_pinsType.end())
         return std::string{""};
 
@@ -335,28 +335,28 @@ std::string Device::getPin(pinId pinNumber) {
     }
 }
 
-pinsQuantity Device::pinsCreated() {
+PinsQuantity Device::pinsCreated() {
     return m_pinsCounter;
 }
 
-pinsQuantity Device::getMaxPins() {
+PinsQuantity Device::getMaxPins() {
     return m_maxPins;
 }
 
 // Getters for pins maps
-const pinsTypeMap& Device::getPinsTypes() const {
+const PinsTypeMap& Device::getPinsTypes() const {
     return m_pinsType;
 }
 
-const pinsIntMap& Device::getIntPins() const {
+const PinsIntMap& Device::getIntPins() const {
     return m_intPins;
 }
 
-const pinsDoubleMap& Device::getDoublePins() const {
+const PinsDoubleMap& Device::getDoublePins() const {
     return m_doublePins;
 }
 
-const pinsStringMap& Device::getStringPins() const {
+const PinsStringMap& Device::getStringPins() const {
     return m_stringPins;
 }
 
@@ -374,22 +374,22 @@ Device::Builder::Builder()
       m_state(DeviceState::OFFLINE) {
 }
 
-Device::Builder& Device::Builder::setOutdatedDelay(delayMs outdatedDelay) {
+Device::Builder& Device::Builder::setOutdatedDelay(DelayMs outdatedDelay) {
     m_outdatedDelay = outdatedDelay;
     return *this;
 }
 
-Device::Builder& Device::Builder::setOfflineDelay(delayMs offlineDelay) {
+Device::Builder& Device::Builder::setOfflineDelay(DelayMs offlineDelay) {
     m_offlineDelay = offlineDelay;
     return *this;
 }
 
-Device::Builder& Device::Builder::setDeadDelay(delayMs deadDelay) {
+Device::Builder& Device::Builder::setDeadDelay(DelayMs deadDelay) {
     m_deadDelay = deadDelay;
     return *this;
 }
 
-Device::Builder& Device::Builder::setMaxPins(pinsQuantity maxPins) {
+Device::Builder& Device::Builder::setMaxPins(PinsQuantity maxPins) {
     m_maxPins = maxPins;
     return *this;
 }
@@ -409,49 +409,49 @@ Device::Builder& Device::Builder::setState(DeviceState state) {
     return *this;
 }
 
-Device::Builder& Device::Builder::setIntPin(pinId pinNumber, int value) {
+Device::Builder& Device::Builder::setIntPin(PinId pinNumber, int value) {
     m_intPins[pinNumber] = value;
     setPinsTypePin(pinNumber, INTID);
     return *this;
 }
 
-Device::Builder& Device::Builder::setDoublePin(pinId pinNumber, double value) {
+Device::Builder& Device::Builder::setDoublePin(PinId pinNumber, double value) {
     m_doublePins[pinNumber] = value;
     setPinsTypePin(pinNumber, DOUBLEID);
     return *this;
 }
 
-Device::Builder& Device::Builder::setStringPin(pinId pinNumber,
+Device::Builder& Device::Builder::setStringPin(PinId pinNumber,
                                                const std::string& value) {
     m_stringPins[pinNumber] = value;
     setPinsTypePin(pinNumber, STRINGID);
     return *this;
 }
 
-Device::Builder& Device::Builder::setPinsTypePin(pinId pinNumber,
+Device::Builder& Device::Builder::setPinsTypePin(PinId pinNumber,
                                                  ContainerID value) {
     m_pinsType[pinNumber] = value;
     return *this;
 }
 
-Device::Builder& Device::Builder::setIntPinMap(pinsIntMap&& intPinMap) {
+Device::Builder& Device::Builder::setIntPinMap(PinsIntMap&& intPinMap) {
     m_intPins = std::move(intPinMap);
     return *this;
 }
 
 Device::Builder& Device::Builder::setDoublePinMap(
-    pinsDoubleMap&& doublePinMap) {
+    PinsDoubleMap&& doublePinMap) {
     m_doublePins = std::move(doublePinMap);
     return *this;
 }
 
 Device::Builder& Device::Builder::setStringPinMap(
-    pinsStringMap&& stringPinMap) {
+    PinsStringMap&& stringPinMap) {
     m_stringPins = std::move(stringPinMap);
     return *this;
 }
 
-Device::Builder& Device::Builder::setPinsTypeMap(pinsTypeMap&& pinsTypeMap) {
+Device::Builder& Device::Builder::setPinsTypeMap(PinsTypeMap&& pinsTypeMap) {
     m_pinsType = std::move(pinsTypeMap);
     return *this;
 }

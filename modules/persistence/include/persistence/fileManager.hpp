@@ -29,7 +29,6 @@
 #include <condition_variable>
 #include <device/device.hpp>
 #include <fstream>
-#include <logging.hpp>
 #include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>
