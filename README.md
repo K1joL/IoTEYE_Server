@@ -48,5 +48,27 @@ IoTeye Server App is an advanced usage example of the [IoTeye Server Library](ht
     ./client/ioteyeClient
     ```
     
+## Docker
+
+
+### 1. Build the Image
+
+```bash
+docker build -t ioteye-server .
+```
+
+> **Note:** The first build will take several minutes because it downloads and compiles Boost and the C++ libraries from source. Subsequent builds will be much faster.
+
+### 2. Run the Server
+```bash
+docker run -d \
+  -p 8080:8080 \
+  -p 8081:8081 \
+  --name ioteye-instance \
+  ioteye-server \
+  --maxPins 100 --outdated 1000 --offline 5000
+```
+
+
 ## License
 This project is licensed under the MIT License - see the [COPYING](COPYING) file for details.
