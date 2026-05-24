@@ -38,6 +38,17 @@ void AdminOptions::handleDeadDelay(uint16_t value) {
     m_deadDelayOpt = value;
 }
 
+void AdminOptions::handleHistoryInterval(uint32_t value) {
+    m_historyIntervalMsOpt = value > 0 ? value : 2000;
+}
+void AdminOptions::handleHistoryMax(uint32_t value) {
+    m_historyMaxSamplesOpt = value > 0 ? value : 5000;
+}
+void AdminOptions::handleHistoryFile(const std::string& value) {
+    if (!value.empty())
+        m_historyFileOpt = value;
+}
+
 uint16_t AdminOptions::getOutdatedDelay() const {
     return m_outdatedDelayOpt;
 }
@@ -52,9 +63,21 @@ uint16_t AdminOptions::getMaxPins() const {
     return m_maxPinsOpt;
 }
 
+uint32_t AdminOptions::getHistoryIntervalMs() const {
+    return m_historyIntervalMsOpt;
+}
+uint32_t AdminOptions::getHistoryMaxSamples() const {
+    return m_historyMaxSamplesOpt;
+}
+const std::string& AdminOptions::getHistoryFile() const {
+    return m_historyFileOpt;
+}
+
 AdminOptions::AdminOptions(int argc, char** argv) : m_argc(argc), m_argv(argv) {
-    std::vector<std::string> options = {"maxPins", "outdated", "offline",
-                                        "dead", "help"};
+    std::vector<std::string> options = {
+        "maxPins",         "outdated",   "offline",     "dead",
+        "historyInterval", "historyMax", "historyFile", "help"};
+        
     po::options_description desc("Usage: IoTeyeServer [options]");
     desc.add_options()("help,h", "Produce help message")(
         "maxPins,p", po::value<uint16_t>(),
@@ -65,7 +88,13 @@ AdminOptions::AdminOptions(int argc, char** argv) : m_argc(argc), m_argv(argv) {
         "offline,f", po::value<uint16_t>(),
         "Time required to consider the device disabled (default: 1000)")(
         "dead,d", po::value<uint16_t>(),
-        "Time required to disable device monitoring (default: 10000)");
+        "Time required to disable device monitoring (default: 10000)")(
+        "historyInterval", po::value<uint32_t>(),
+        "Pin history snapshot interval in ms (default: 2000)")(
+        "historyMax", po::value<uint32_t>(),
+        "Max lines in pin history file (default: 5000)")(
+        "historyFile", po::value<std::string>(),
+        "Pin history JSONL file path (default: pin_history.jsonl)");
     po::variables_map vm;
     po::store(po::parse_command_line(m_argc, m_argv, desc), vm);
     po::notify(vm);
@@ -83,6 +112,18 @@ AdminOptions::AdminOptions(int argc, char** argv) : m_argc(argc), m_argv(argv) {
         {options[DEADDELAY],
          [&vm, opt = options[DEADDELAY], this]() {
              handleDeadDelay(vm[opt].as<uint16_t>());
+         }},
+        {options[HISTORYINTERVAL],
+         [&vm, opt = options[HISTORYINTERVAL], this]() {
+             handleHistoryInterval(vm[opt].as<uint32_t>());
+         }},
+        {options[HISTORYMAX],
+         [&vm, opt = options[HISTORYMAX], this]() {
+             handleHistoryMax(vm[opt].as<uint32_t>());
+         }},
+        {options[HISTORYFILE],
+         [&vm, opt = options[HISTORYFILE], this]() {
+             handleHistoryFile(vm[opt].as<std::string>());
          }},
         {options[HELP], [&desc]() { std::cout << desc << std::endl; }},
     };

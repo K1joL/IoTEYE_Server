@@ -198,11 +198,11 @@ void Device::generateToken() {
     m_token = token;
 }
 
-std::string Device::getToken() {
+std::string Device::getToken() const {
     return m_token;
 }
 
-DeviceID Device::getID() {
+DeviceID Device::getID() const {
     return m_id;
 }
 
@@ -318,7 +318,7 @@ int Device::removePin(PinId pinNumber) {
     return 0;
 }
 
-std::string Device::getPin(PinId pinNumber) {
+std::string Device::getPin(PinId pinNumber) const {
     if (m_pinsType.find(pinNumber) == m_pinsType.end())
         return std::string{""};
 
@@ -335,11 +335,11 @@ std::string Device::getPin(PinId pinNumber) {
     }
 }
 
-PinsQuantity Device::pinsCreated() {
+PinsQuantity Device::pinsCreated() const {
     return m_pinsCounter;
 }
 
-PinsQuantity Device::getMaxPins() {
+PinsQuantity Device::getMaxPins() const {
     return m_maxPins;
 }
 

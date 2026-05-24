@@ -3,6 +3,12 @@
 # ==========================================
 FROM ubuntu:24.04 AS builder
 
+# Improve apt reliability from Docker
+RUN printf 'Acquire::Retries "10";\nAcquire::http::Timeout "120";\nAcquire::ForceIPv4 "true";\n' > /etc/apt/apt.conf.d/99docker
+
+# Use kernel.org mirror if archive.ubuntu.com is flaky from your network
+RUN sed -i 's|http://archive.ubuntu.com/ubuntu|http://mirrors.edge.kernel.org/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources
+
 # Install build dependencies (CMake, compiler, Git)
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -11,78 +17,57 @@ RUN apt-get update && apt-get install -y \
     nlohmann-json3-dev \
     libgtest-dev \
     libssl-dev \
+    libboost-program-options-dev \
     git \
+    && mkdir -p /mark && touch /mark/deps-ready \
     && rm -rf /var/lib/apt/lists/*
 
-# Build Boost 1.88.0 from source (Only program_options to save time)
-WORKDIR /tmp
-RUN wget https://archives.boost.io/release/1.88.0/source/boost_1_88_0.tar.gz && \
-    tar -xzf boost_1_88_0.tar.gz && \
-    cd boost_1_88_0 && \
-    ./bootstrap.sh --prefix=/usr/local && \
-    ./b2 --with-program_options -j$(nproc) install && \
-    rm -rf /tmp/boost*
-	
 # Set up the working directory
 WORKDIR /src
 
-# Add a dummy argument to bust the cache here
-ARG CACHEBUST=1
+# Copy the local source code into the container
+COPY . /src/IoTeyeServerApp
 
-# Create a dedicated, clean directory for the library install outside the build tree
-RUN mkdir -p /src/ioteye_lib
-
-# Clone the public library and server app repositories
-RUN git clone -b develop https://github.com/K1joL/IoTeyeHttpServer.git
-RUN git clone -b develop https://github.com/K1joL/IoTeyeServerApp.git
-
-# ----------------------------------------------------
-# 1. Build the library
-# ----------------------------------------------------
-WORKDIR /src/IoTeyeHttpServer/build
-RUN cmake -DCMAKE_BUILD_TYPE=Debug -DIOTEYE_USE_BOOST_ASIO=ON .. && \
-    make -j$(nproc) && \
-    make install
-
-# ----------------------------------------------------
-# 1.5 Install jwt-cpp (Header-only library)
-# ----------------------------------------------------
-WORKDIR /src
-RUN git clone https://github.com/Thalhammer/jwt-cpp.git && \
-    cd jwt-cpp && \
-    mkdir build && cd build && \
-    cmake -DCMAKE_INSTALL_PREFIX=/usr/local .. && \
-    make install
-
-# ----------------------------------------------------
-# 2. Build the server application
-# ----------------------------------------------------
+# Build the server application
+# -DFETCH_LIBIOTEYESERVER=ON will trigger FetchContent for ioteyeserver
+# jwt-cpp is also handled automatically by FetchContent in CMakeLists.txt
 WORKDIR /src/IoTeyeServerApp/build
-RUN cmake -DCMAKE_BUILD_TYPE=Debug .. && \
+RUN cmake -DCMAKE_BUILD_TYPE=Debug -DFETCH_LIBIOTEYESERVER=ON -DFETCH_JWT_CPP=ON .. && \
     make -j$(nproc)
-	
+    
 # ==========================================
 # STAGE 2: Minimal Runtime Environment
 # ==========================================
 FROM ubuntu:24.04 AS runtime
 
+# Serialize apt: avoid parallel apt-get with builder (both hammer Ubuntu mirrors at once under BuildKit)
+COPY --from=builder /mark/deps-ready /tmp/.builder-apt-done
+
+RUN printf 'Acquire::Retries "10";\nAcquire::http::Timeout "120";\nAcquire::ForceIPv4 "true";\n' > /etc/apt/apt.conf.d/99docker
+RUN sed -i 's|http://archive.ubuntu.com/ubuntu|http://mirrors.edge.kernel.org/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources
+
+# Install only runtime dependencies
 RUN apt-get update && apt-get install -y \
     libstdc++6 \
     libssl3 \
     ca-certificates \
+    libboost-program-options1.83.0 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /usr/local/lib/libboost_program_options.so.1.88.0 /usr/local/lib/
-RUN ldconfig
-
 RUN useradd -m appuser
+
+# Copy the built binary from the builder stage
+COPY --from=builder /src/IoTeyeServerApp/build/app/ioteye /usr/local/bin/ioteye
+RUN chmod 755 /usr/local/bin/ioteye
+
 USER appuser
 WORKDIR /home/appuser
-
-COPY --from=builder /src/IoTeyeServerApp/build/app/ioteye ./ioteye
 
 EXPOSE 8080
 EXPOSE 8081
 
-# Run the copied file
-CMD ["./ioteye"]
+# Set the binary as the main executable for the container
+ENTRYPOINT ["/usr/local/bin/ioteye"]
+
+# Provide default arguments
+CMD ["--historyInterval", "2000", "--historyMax", "5000", "--historyFile", "pin_history.jsonl"]

@@ -39,7 +39,8 @@ enum COMMANDS {
     UPDATE_PIN = 'u' + 'p',            // 229
     DELETE_PIN = 'd' + 'p',            // 212
     GET_PIN = 'p' + 'v',               // 230
-    COMMANDS_MAX = 9
+    GET_HISTORY = 'g' + 'h',           // 215
+    COMMANDS_MAX = 10
 };
 uint8_t GetCommandCode(const std::string& cmd);
 

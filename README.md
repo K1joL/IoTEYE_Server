@@ -61,12 +61,7 @@ docker build -t ioteye-server .
 
 ### 2. Run the Server
 ```bash
-docker run -d \
-  -p 8080:8080 \
-  -p 8081:8081 \
-  --name ioteye-instance \
-  ioteye-server \
-  --maxPins 100 --outdated 1000 --offline 5000
+docker run -d -p 8080:8080 -p 8081:8081 --name ioteye-instance ioteye-server --maxPins 100 --outdated 1000 --offline 5000
 ```
 
 
