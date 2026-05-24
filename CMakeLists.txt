@@ -35,26 +35,35 @@ endif()
 
 option(IOTEYE_SERVER_ENABLE_TESTS "Enable tests compilation" OFF)
 option(FETCH_LIBIOTEYESERVER "Enable fetching libioteyeserver if not found" OFF)
+option(FETCH_JWT_CPP "Enable fetching jwt-cpp if not found" ON)
 
 # --- External Dependencies ---
 include(FetchContent)
 
 # jwt-cpp
-FetchContent_Declare(jwt-cpp
-    GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
-    GIT_TAG 08bcf77a687fb06e34138e9e9fa12a4ecbe12332
-)
-set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "disable building examples" FORCE)
-FetchContent_MakeAvailable(jwt-cpp)
-
+find_package(jwt-cpp QUIET)
+if(NOT jwt-cpp_FOUND)
+    if(FETCH_JWT_CPP)
+        FetchContent_Declare(jwt-cpp
+            GIT_REPOSITORY https://github.com/Thalhammer/jwt-cpp.git
+            GIT_TAG 08bcf77a687fb06e34138e9e9fa12a4ecbe12332
+        )
+        set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "disable building examples" FORCE)
+        FetchContent_MakeAvailable(jwt-cpp)
+    else()
+        message(FATAL_ERROR "jwt-cpp not found! Install it yourself or use -DFETCH_JWT_CPP=ON.")
+    endif()
+else()
+    message(STATUS "Found local jwt-cpp installation.")
+endif()
 # System dependencies
 find_package(Threads REQUIRED)
 find_package(Boost 1.83 REQUIRED COMPONENTS program_options)
 find_package(nlohmann_json REQUIRED)
-find_package(ioteyeserver QUIET)
 
-if(FETCH_LIBIOTEYESERVER)
-    if(NOT ioteyeserver_FOUND)
+find_package(ioteyeserver QUIET)
+if(NOT ioteyeserver_FOUND)
+    if(FETCH_LIBIOTEYESERVER)
         message(STATUS "ioteyeserver not found, fetching from GitHub")
         set(IOTEYE_USE_BOOST_ASIO ON CACHE BOOL "Use Boost.Asio instead of standalone asio" FORCE)
         FetchContent_Declare(ioteyeserver
@@ -65,14 +74,13 @@ if(FETCH_LIBIOTEYESERVER)
         if(TARGET ioteyeserver AND NOT TARGET ioteyeserver::ioteyeserver)
             add_library(ioteyeserver::ioteyeserver ALIAS ioteyeserver)
         endif()
-    endif()
-else()
-    if(NOT ioteyeserver_FOUND)
+    else()
         message(FATAL_ERROR "ioteyeserver not found! Install it yourself or use -DFETCH_LIBIOTEYESERVER=ON to fetch it automatically.")
     endif()
+else()
+    message(STATUS "Found local ioteyeserver installation.")
 endif()
 
-# Global include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${Boost_INCLUDE_DIRS})
 
