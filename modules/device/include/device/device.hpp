@@ -60,8 +60,8 @@ public:
     Device(Device&& other) noexcept;
     Device& operator=(Device&& other) noexcept;
     void generateToken();
-    std::string getToken();
-    types::DeviceID getID();
+    std::string getToken() const;
+    types::DeviceID getID() const;
     types::DeviceState getState() const;
     void changeState(types::DeviceState state);
     void ping();
@@ -73,9 +73,9 @@ public:
                const std::string& defaultData);
     int changePin(types::PinId pinNumber, const std::string& data);
     int removePin(types::PinId pinNumber);
-    std::string getPin(types::PinId pinNumber);
-    types::PinsQuantity pinsCreated();
-    types::PinsQuantity getMaxPins();
+    std::string getPin(types::PinId pinNumber) const;
+    types::PinsQuantity pinsCreated() const;
+    types::PinsQuantity getMaxPins() const;
     // Getters for pins maps
     const types::PinsTypeMap& getPinsTypes() const;
     const types::PinsIntMap& getIntPins() const;
