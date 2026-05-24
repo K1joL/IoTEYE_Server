@@ -1,5 +1,6 @@
 add_library(ioteye_persistence STATIC
     src/fileManager.cpp
+    src/pinHistoryLogger.cpp
 )
 
 target_include_directories(ioteye_persistence
