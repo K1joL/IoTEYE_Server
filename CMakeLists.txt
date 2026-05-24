@@ -34,6 +34,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 option(IOTEYE_SERVER_ENABLE_TESTS "Enable tests compilation" OFF)
+option(FETCH_LIBIOTEYESERVER "Enable fetching libioteyeserver if not found" OFF)
 
 # --- External Dependencies ---
 include(FetchContent)
@@ -50,18 +51,24 @@ FetchContent_MakeAvailable(jwt-cpp)
 find_package(Threads REQUIRED)
 find_package(Boost 1.83 REQUIRED COMPONENTS program_options)
 find_package(nlohmann_json REQUIRED)
-
 find_package(ioteyeserver QUIET)
-if(NOT ioteyeserver_FOUND)
-    message(STATUS "ioteyeserver not found, fetching from GitHub")
-    set(IOTEYE_USE_BOOST_ASIO ON CACHE BOOL "Use Boost.Asio instead of standalone asio" FORCE)
-    FetchContent_Declare(ioteyeserver
-        GIT_REPOSITORY https://github.com/K1joL/IoTeyeHttpServer.git
-        GIT_TAG develop
-    )
-    FetchContent_MakeAvailable(ioteyeserver)
-    if(TARGET ioteyeserver AND NOT TARGET ioteyeserver::ioteyeserver)
-        add_library(ioteyeserver::ioteyeserver ALIAS ioteyeserver)
+
+if(FETCH_LIBIOTEYESERVER)
+    if(NOT ioteyeserver_FOUND)
+        message(STATUS "ioteyeserver not found, fetching from GitHub")
+        set(IOTEYE_USE_BOOST_ASIO ON CACHE BOOL "Use Boost.Asio instead of standalone asio" FORCE)
+        FetchContent_Declare(ioteyeserver
+            GIT_REPOSITORY https://github.com/K1joL/IoTeyeHttpServer.git
+            GIT_TAG develop
+        )
+        FetchContent_MakeAvailable(ioteyeserver)
+        if(TARGET ioteyeserver AND NOT TARGET ioteyeserver::ioteyeserver)
+            add_library(ioteyeserver::ioteyeserver ALIAS ioteyeserver)
+        endif()
+    endif()
+else()
+    if(NOT ioteyeserver_FOUND)
+        message(FATAL_ERROR "ioteyeserver not found! Install it yourself or use -DFETCH_LIBIOTEYESERVER=ON to fetch it automatically.")
     endif()
 endif()
 
