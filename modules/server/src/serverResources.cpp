@@ -32,6 +32,11 @@ using namespace ioteye::types;
 
 std::unordered_map<DeviceID, DevicePtr> s_idDeviceMap;
 
+PinsResource::PinsResource(
+    std::shared_ptr<persistence::IPinHistoryLogger> historyLogger)
+    : m_pinHistoryLogger(historyLogger) {
+}
+
 std::shared_ptr<HttpResponse> PinsResource::renderPOST(const HttpRequest& req) {
     logStatus("pins POST\n", req.getArgs());
 
@@ -147,10 +152,11 @@ std::shared_ptr<HttpResponse> PinsResource::renderPUT(const HttpRequest& req) {
 
     switch (ioteye::GetCommandCode(cmd)) {
         case ioteye::UPDATE_PIN:
-            if ((device->second->changePin(pinNumber, value)) == 0)
+            if ((device->second->changePin(pinNumber, value)) == 0) {
+                m_pinHistoryLogger->record(*device->second);
                 return std::make_shared<HttpResponse>(HttpStatusCode::OK,
                                                       "Pin changed");
-            else
+            } else
                 return std::make_shared<HttpResponse>(
                     HttpStatusCode::BAD_REQUEST, "Pin does not exists!");
             break;
@@ -361,6 +367,70 @@ std::shared_ptr<HttpResponse> DeviceResource::renderDELETE(
             return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
                                                   "Wrong command!");
     }
+}
+
+HistoryResource::HistoryResource(
+    std::shared_ptr<persistence::IPinHistoryLogger> historyLogger)
+    : m_pinHistoryLogger(historyLogger) {
+}
+
+std::shared_ptr<HttpResponse> HistoryResource::renderPOST(const HttpRequest&) {
+    return createMethodNotAllowed("GET");
+}
+
+std::shared_ptr<HttpResponse> HistoryResource::renderPUT(const HttpRequest&) {
+    return createMethodNotAllowed("GET");
+}
+
+std::shared_ptr<HttpResponse> HistoryResource::renderDELETE(
+    const HttpRequest&) {
+    return createMethodNotAllowed("GET");
+}
+
+std::shared_ptr<HttpResponse> HistoryResource::renderGET(
+    const HttpRequest& req) {
+    logStatus("HISTORY GET\n", req.getArgs());
+
+    std::string token{req.getArg("token")};
+    std::string sinceStr{req.getArg("since")};
+    std::string untilStr{req.getArg("until")};
+    std::string limitStr{req.getArg("limit")};
+
+    DeviceIter device;
+    switch (authCheck(token, device)) {
+        case HttpStatusCode::BAD_REQUEST:
+            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                  "Device doesn`t exist!");
+        case HttpStatusCode::UNAUTHORIZED:
+            return std::make_shared<HttpResponse>(HttpStatusCode::UNAUTHORIZED,
+                                                  "Auth failure!");
+        case HttpStatusCode::OK:
+            break;
+        default:
+            break;
+    }
+    if (device == s_idDeviceMap.end())
+        return std::make_shared<HttpResponse>(
+            HttpStatusCode::INTERNAL_SERVER_ERROR, "Something went wrong");
+
+    int64_t since = 0;
+    int64_t until = 2147483647LL;
+    uint32_t limit = 1000;
+    try {
+        if (!sinceStr.empty())
+            since = std::stoll(sinceStr);
+        if (!untilStr.empty())
+            until = std::stoll(untilStr);
+        if (!limitStr.empty())
+            limit = static_cast<uint32_t>(std::stoul(limitStr));
+    } catch (...) {
+        return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                              "Invalid history parameters");
+    }
+
+    const std::string body =
+        m_pinHistoryLogger->query(device->second->getID(), since, until, limit);
+    return std::make_shared<HttpResponse>(HttpStatusCode::OK, body);
 }
 
 uint16_t authCheck(const std::string& token, DeviceIter& deviceIter) {

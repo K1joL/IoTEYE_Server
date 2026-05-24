@@ -26,11 +26,12 @@
 #include <iostream>
 #include <ioteyeserver.hpp>
 #include <persistence/fileManager.hpp>
+#include <persistence/historyLogger/pinHistoryLogger.hpp>
 #include <server/serverResources.hpp>
 
+using ioteye::resource::s_idDeviceMap;
 using std::cout;
 using std::endl;
-using ioteye::resource::s_idDeviceMap;
 
 int main(int argc, char** argv) {
     try {
@@ -57,8 +58,19 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    auto pins = std::make_shared<ioteye::resource::PinsResource>();
+    const auto& opts = ioteye::AdminOptions::getOptions();
+    ioteye::persistence::PinHistoryConfig cfg;
+    cfg.intervalMs = opts.getHistoryIntervalMs();
+    cfg.maxSamples = opts.getHistoryMaxSamples();
+    cfg.filePath = opts.getHistoryFile();
+    auto pinHistoryLogger =
+        std::make_shared<ioteye::persistence::PinHistoryLogger>(cfg);
+
+    auto pins =
+        std::make_shared<ioteye::resource::PinsResource>(pinHistoryLogger);
     auto devices = std::make_shared<ioteye::resource::DeviceResource>();
+    auto history =
+        std::make_shared<ioteye::resource::HistoryResource>(pinHistoryLogger);
     ioteye::Webserver ws =
         ioteye::Webserver::Builder()
             .setTcpPort(8080)
@@ -78,6 +90,9 @@ int main(int argc, char** argv) {
             .setResource("/devices/{cmd}", devices, "rd")
             // GET DEVICE STATUS or UPDATE DEVICE STATUS or DELETE DEVICE
             .setResource("/devices/{token}/{cmd}", devices, "ds,us,dd")
+            // PIN HISTORY (since/until unix sec, limit)
+            .setResource("/devices/{token}/history/{since}/{until}/{limit}",
+                         history, "gh")
             .build();
     ws.start();
     char key;

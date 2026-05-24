@@ -29,6 +29,7 @@
 #include <device/device.hpp>
 #include <ioteyeserver.hpp>
 #include <memory>
+#include <persistence/historyLogger/pinHistoryLogger.hpp>
 #include <unordered_map>
 
 namespace ioteye::resource {
@@ -46,10 +47,14 @@ uint16_t authCheck(const std::string& token, DeviceIter& deviceIter);
 
 class PinsResource : public HttpResourceHandler {
 public:
+    PinsResource(std::shared_ptr<persistence::IPinHistoryLogger> historyLogger);
     std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
+
+private:
+    std::shared_ptr<persistence::IPinHistoryLogger> m_pinHistoryLogger;
 };
 
 class DeviceResource : public HttpResourceHandler {
@@ -58,6 +63,19 @@ public:
     std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
+};
+
+class HistoryResource : public HttpResourceHandler {
+public:
+    HistoryResource(
+        std::shared_ptr<persistence::IPinHistoryLogger> historyLogger);
+    std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
+
+private:
+    std::shared_ptr<persistence::IPinHistoryLogger> m_pinHistoryLogger;
 };
 }  // namespace ioteye::resource
 
