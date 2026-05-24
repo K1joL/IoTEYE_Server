@@ -30,6 +30,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -43,6 +44,9 @@ public:
     uint16_t getOfflineDelay() const;
     uint16_t getDeadDelay() const;
     uint16_t getMaxPins() const;
+    uint32_t getHistoryIntervalMs() const;
+    uint32_t getHistoryMaxSamples() const;
+    const std::string& getHistoryFile() const;
 
     AdminOptions(AdminOptions& other) = delete;
     void operator=(const AdminOptions&) = delete;
@@ -56,6 +60,9 @@ private:
     void handleOutdatedDelay(uint16_t value);
     void handleOfflineDelay(uint16_t value);
     void handleDeadDelay(uint16_t value);
+    void handleHistoryInterval(uint32_t value);
+    void handleHistoryMax(uint32_t value);
+    void handleHistoryFile(const std::string& value);
 
 private:
     int m_argc = 0;
@@ -65,7 +72,21 @@ private:
     uint16_t m_outdatedDelayOpt = 500;
     uint16_t m_offlineDelayOpt = 1000;
     uint16_t m_deadDelayOpt = 10000;
-    enum OPTIONS { MAXPINS, OUTDATED, OFFLINE, DEADDELAY, HELP, MAXOPTIONS };
+    uint32_t m_historyIntervalMsOpt = 2000;
+    uint32_t m_historyMaxSamplesOpt = 5000;
+    std::string m_historyFileOpt = "pin_history.jsonl";
+
+    enum OPTIONS {
+        MAXPINS,
+        OUTDATED,
+        OFFLINE,
+        DEADDELAY,
+        HISTORYINTERVAL,
+        HISTORYMAX,
+        HISTORYFILE,
+        HELP,
+        MAXOPTIONS
+    };
 };
 
 }  // namespace ioteye
