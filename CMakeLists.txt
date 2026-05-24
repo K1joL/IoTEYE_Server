@@ -34,6 +34,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 option(IOTEYE_SERVER_ENABLE_TESTS "Enable tests compilation" OFF)
+option(FETCH_LIBIOTEYESERVER "Enable fetching libioteyeserver if not found" OFF)
 
 # --- External Dependencies ---
 include(FetchContent)
@@ -47,11 +48,29 @@ set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "disable building examples" FORCE)
 FetchContent_MakeAvailable(jwt-cpp)
 
 # System dependencies
-find_package(ioteyeserver REQUIRED)
 find_package(Threads REQUIRED)
-find_package(Boost 1.88.0 REQUIRED)
-find_package(Boost 1.88.0 REQUIRED COMPONENTS program_options)
+find_package(Boost 1.83 REQUIRED COMPONENTS program_options)
 find_package(nlohmann_json REQUIRED)
+find_package(ioteyeserver QUIET)
+
+if(FETCH_LIBIOTEYESERVER)
+    if(NOT ioteyeserver_FOUND)
+        message(STATUS "ioteyeserver not found, fetching from GitHub")
+        set(IOTEYE_USE_BOOST_ASIO ON CACHE BOOL "Use Boost.Asio instead of standalone asio" FORCE)
+        FetchContent_Declare(ioteyeserver
+            GIT_REPOSITORY https://github.com/K1joL/IoTeyeHttpServer.git
+            GIT_TAG develop
+        )
+        FetchContent_MakeAvailable(ioteyeserver)
+        if(TARGET ioteyeserver AND NOT TARGET ioteyeserver::ioteyeserver)
+            add_library(ioteyeserver::ioteyeserver ALIAS ioteyeserver)
+        endif()
+    endif()
+else()
+    if(NOT ioteyeserver_FOUND)
+        message(FATAL_ERROR "ioteyeserver not found! Install it yourself or use -DFETCH_LIBIOTEYESERVER=ON to fetch it automatically.")
+    endif()
+endif()
 
 # Global include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)

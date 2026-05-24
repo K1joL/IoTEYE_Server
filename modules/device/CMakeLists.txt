@@ -13,7 +13,6 @@ target_link_libraries(ioteye_device
     PUBLIC
     ioteye::common
     ioteye::utils
-    PRIVATE
     jwt-cpp::jwt-cpp
 )
 
