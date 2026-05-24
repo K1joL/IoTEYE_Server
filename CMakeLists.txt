@@ -48,7 +48,7 @@ FetchContent_MakeAvailable(jwt-cpp)
 
 # System dependencies
 find_package(Threads REQUIRED)
-find_package(Boost 1.74 REQUIRED COMPONENTS program_options)
+find_package(Boost 1.83 REQUIRED COMPONENTS program_options)
 find_package(nlohmann_json REQUIRED)
 
 find_package(ioteyeserver QUIET)
