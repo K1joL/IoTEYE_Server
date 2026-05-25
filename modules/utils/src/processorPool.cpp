@@ -46,12 +46,11 @@ void Processor::run() {
         {
             std::shared_lock lock(m_mutex);
             if (!m_objects.empty()) {
-                static size_t lastIndex = 0;
-                size_t index = lastIndex % m_objects.size();
+                size_t index = m_lastIndex % m_objects.size();
                 auto it = m_objects.begin();
                 std::advance(it, index);
                 currentObj = it->second;
-                lastIndex++;
+                m_lastIndex++;
             }
         }
 

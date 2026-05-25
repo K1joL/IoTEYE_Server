@@ -52,6 +52,7 @@ private:
     std::atomic<bool> m_running{true};
     std::atomic<bool> m_isReady{true};
     std::thread m_thread;
+    size_t m_lastIndex{0};
 };
 
 /**
