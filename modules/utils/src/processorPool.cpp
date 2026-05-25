@@ -138,7 +138,7 @@ ProcessorPool::ProcessorPool(size_t maxProc, size_t minProc,
       m_minLoad(minLoad),
       m_sleepInterval(sleepInterval) {
     for (size_t i = 0; i < m_minProc; ++i)
-        addProcessor();
+        addProcessor_nolock();
 }
 
 ProcessorPool::ProcessorPool(ProcessorPool&& other)
@@ -148,32 +148,32 @@ ProcessorPool::ProcessorPool(ProcessorPool&& other)
       m_maxLoad(other.m_maxLoad),
       m_minLoad(other.m_minLoad),
       m_sleepInterval(other.m_sleepInterval),
-      m_procCount(other.m_procCount),
-      m_objCount(other.m_objCount),
       m_processors(std::move(other.m_processors)) {
-    other.m_objCount = 0;
-    other.m_procCount = 0;
+    m_procCount.store(other.m_procCount.load());
+    m_objCount.store(other.m_objCount.load());
+    other.m_objCount.store(0);
+    other.m_procCount.store(0);
 }
 
 ProcessorPool& ProcessorPool::operator=(ProcessorPool&& other) {
-    if (&other != this) {
-        std::unique_lock<std::recursive_mutex> lock1(m_poolMutex,
-                                                     std::defer_lock);
-        std::unique_lock<std::recursive_mutex> lock2(other.m_poolMutex,
-                                                     std::defer_lock);
-        std::lock(lock1, lock2);
-        m_maxLoad = other.m_maxLoad;
-        m_minLoad = other.m_minLoad;
-        m_maxProc = other.m_maxProc;
-        m_minProc = other.m_minProc;
-        m_procCapacity = other.m_procCapacity;
-        m_sleepInterval = other.m_sleepInterval;
-        m_objCount = other.m_objCount;
-        m_procCount = other.m_procCount;
-        m_processors = std::move(other.m_processors);
+    if (this == &other) {
+        return *this;
     }
-    other.m_objCount = 0;
-    other.m_procCount = 0;
+
+    std::scoped_lock lock(m_poolMutex, other.m_poolMutex);
+    m_maxLoad = other.m_maxLoad;
+    m_minLoad = other.m_minLoad;
+    m_maxProc = other.m_maxProc;
+    m_minProc = other.m_minProc;
+    m_procCapacity = other.m_procCapacity;
+    m_sleepInterval = other.m_sleepInterval;
+    m_processors = std::move(other.m_processors);
+
+    m_procCount.store(other.m_procCount.load());
+    m_objCount.store(other.m_objCount.load());
+    other.m_objCount.store(0);
+    other.m_procCount.store(0);
+
     return *this;
 }
 
@@ -183,19 +183,27 @@ ProcessorPool::~ProcessorPool() {
 }
 
 bool ProcessorPool::registerObject(const std::shared_ptr<ManagedObject> obj) {
-    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
-    if (m_objCount >= m_procCapacity * m_maxProc)
+    std::lock_guard<std::mutex> lock(m_poolMutex);
+
+    if (m_objCount >= m_procCapacity * m_maxProc) {
         return false;
-    auto procPtr = getLeastLoadProc();
-    if (procPtr != nullptr && procPtr->getSize() < m_procCapacity)
-        if (procPtr->addObject(obj)) {
-            ++m_objCount;
-            if (!adjustProcessors())
-                debug::logln(LogLevel::ERROR,
-                             "Error while adjusting processor count");
-            return true;
-        }
-    return false;
+    }
+
+    auto procPtr = getLeastLoadProc_nolock();
+    if (!procPtr || procPtr->getSize() >= m_procCapacity) {
+        return false;
+    }
+
+    if (!procPtr->addObject(obj)) {
+        return false;
+    }
+
+    m_objCount.fetch_add(1);
+    bool result = adjustProcessors_nolock();
+    if (!result)
+        debug::logln(LogLevel::ERROR, "Error while adjusting processor count");
+
+    return true;
 }
 
 bool ProcessorPool::removeObject(std::shared_ptr<ManagedObject> obj) {
@@ -203,14 +211,17 @@ bool ProcessorPool::removeObject(std::shared_ptr<ManagedObject> obj) {
 }
 
 bool ProcessorPool::removeObject(objID objId) {
-    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
-    if (m_processors.empty())
+    std::lock_guard<std::mutex> lock(m_poolMutex);
+
+    if (m_processors.empty()) {
         return false;
-    auto foundProc = getProcessorContains(objId);
-    if (foundProc != nullptr) {
+    }
+
+    auto foundProc = getProcessorContains_nolock(objId);
+    if (foundProc) {
         if (foundProc->removeObject(objId)) {
-            --m_objCount;
-            if (!adjustProcessors())
+            m_objCount.fetch_sub(1);
+            if (!adjustProcessors_nolock())
                 debug::logln(LogLevel::ERROR,
                              "Error while adjusting processor count");
             return true;
@@ -221,19 +232,17 @@ bool ProcessorPool::removeObject(objID objId) {
 
 std::shared_ptr<Processor> ProcessorPool::getProcessorContains(
     const std::shared_ptr<ManagedObject> obj) const {
-    return getProcessorContains(obj->getID());
+    std::lock_guard<std::mutex> lock(m_poolMutex);
+    return getProcessorContains_nolock(obj->getID());
 }
 
 std::shared_ptr<Processor> ProcessorPool::getProcessorContains(objID id) const {
-    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
-    for (size_t i = 0; i < m_procCount; ++i)
-        if (m_processors[i]->contains(id))
-            return m_processors[i];
-    return nullptr;
+    std::lock_guard<std::mutex> lock(m_poolMutex);
+    return getProcessorContains_nolock(id);
 }
 
 void ProcessorPool::stopAll() {
-    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
+    std::lock_guard<std::mutex> lock(m_poolMutex);
     for (auto& proc : m_processors)
         if (proc->isRunning()) {
             proc->stop();
@@ -241,31 +250,41 @@ void ProcessorPool::stopAll() {
 }
 
 size_t ProcessorPool::getObjCount() const {
-    return m_objCount;
+    return m_objCount.load();
 }
 
 size_t ProcessorPool::getProcCount() const {
-    return m_procCount;
+    return m_procCount.load();
 }
 
-bool ProcessorPool::adjustProcessors() {
-    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
-    if (m_procCount == 0 || m_procCapacity == 0) {
+std::shared_ptr<Processor> ProcessorPool::getProcessorContains_nolock(
+    objID id) const {
+    for (size_t i = 0; i < m_processors.size(); ++i)
+        if (m_processors[i]->contains(id))
+            return m_processors[i];
+    return nullptr;
+}
+
+bool ProcessorPool::adjustProcessors_nolock() {
+    auto procCount = m_procCount.load();
+    if (procCount == 0 || m_procCapacity == 0) {
         return false;
     }
-    loadt load = (100 * m_objCount) / (m_procCapacity * m_procCount);
-    if (m_maxProc != m_procCount && load >= m_maxLoad) {
-        return addProcessor();
+
+    loadt load = (100 * m_objCount.load()) / (m_procCapacity * procCount);
+    if (m_maxProc != procCount && load >= m_maxLoad) {
+        return addProcessor_nolock();
     }
-    if (m_minProc != m_procCount && load < m_minLoad) {
-        return removeProcessor();
+
+    if (m_minProc != procCount && load < m_minLoad) {
+        return removeProcessor_nolock();
     }
+
     return true;
 }
 
-bool ProcessorPool::addProcessor() {
-    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
-    if (m_procCount < m_maxProc) {
+bool ProcessorPool::addProcessor_nolock() {
+    if (m_procCount.load() < m_maxProc) {
         try {
             m_processors.push_back(
                 std::make_shared<Processor>(m_sleepInterval));
@@ -274,30 +293,37 @@ bool ProcessorPool::addProcessor() {
                          "Error while emplace processor: ", e.what());
             return false;
         }
-        ++m_procCount;
+        m_procCount.fetch_add(1);
         return true;
     }
     return false;
 }
 
-bool ProcessorPool::removeProcessor() {
-    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
-    if (m_procCount <= m_minProc)
+bool ProcessorPool::removeProcessor_nolock() {
+    if (m_procCount.load() <= m_minProc)
         return false;
-    size_t leastLoadProcId = getLeastLoadProcId();
-    auto proc = getProc(leastLoadProcId);
-    proc->setReady(false);
-    if (redistributeObjects(proc)) {
-        --m_procCount;
-        m_processors.erase(m_processors.begin() + leastLoadProcId);
-        return true;
+
+    size_t leastLoadProcId = getLeastLoadProcId_nolock();
+    auto proc = getProc_nolock(leastLoadProcId);
+    if (!proc) {
+        return false;
     }
-    return false;
+    // turn off processor first
+    proc->setReady(false);
+    // trying to redistribute
+    // set the ready flag back to true in case of failure
+    if (!redistributeObjects_nolock(proc)) {
+        proc->setReady(true);
+        return false;
+    }
+    // successful redistribution
+    m_procCount.fetch_sub(1);
+    m_processors.erase(m_processors.begin() + leastLoadProcId);
+    return true;
 }
 
-bool ProcessorPool::redistributeObjects(std::shared_ptr<Processor> processor) {
-    std::unique_lock<std::recursive_mutex> poolLock(m_poolMutex);
-
+bool ProcessorPool::redistributeObjects_nolock(
+    const std::shared_ptr<Processor>& processor) {
     auto ids = processor->getObjectIds();
 
     for (auto id : ids) {
@@ -305,7 +331,7 @@ bool ProcessorPool::redistributeObjects(std::shared_ptr<Processor> processor) {
             continue;
         }
 
-        auto targetProc = getLeastLoadProc();
+        auto targetProc = getLeastLoadProc_nolock();
         if (!targetProc || targetProc == processor) {
             return false;
         }
@@ -321,26 +347,33 @@ bool ProcessorPool::redistributeObjects(std::shared_ptr<Processor> processor) {
     return true;
 }
 
-std::shared_ptr<Processor> ProcessorPool::getLeastLoadProc() {
-    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
-    return m_processors[getLeastLoadProcId()];
+std::shared_ptr<Processor> ProcessorPool::getLeastLoadProc_nolock() const {
+    if (m_processors.empty())
+        return nullptr;
+    auto id = getLeastLoadProcId_nolock();
+    if (id >= m_processors.size())
+        return nullptr;
+    return m_processors[id];
 }
 
-std::shared_ptr<Processor> ProcessorPool::getProc(size_t id) {
-    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
-    if (id < m_procCount)
+std::shared_ptr<Processor> ProcessorPool::getProc_nolock(size_t id) const {
+    if (id < m_procCount.load())
         return m_processors[id];
     else
         return nullptr;
 }
 
-size_t ProcessorPool::getLeastLoadProcId() {
-    std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
+size_t ProcessorPool::getLeastLoadProcId_nolock() const {
     uint8_t leastLoad = 255;
-    size_t leastLoadProcId = 0;
+    size_t leastLoadProcId = std::numeric_limits<size_t>::max();
+
     for (size_t i = 0; i < m_processors.size(); ++i) {
+        if (!m_processors[i] || !m_processors[i]->isReady()) {
+            continue;
+        }
+
         uint8_t curLoad = 100 * m_processors[i]->getSize() / m_procCapacity;
-        if (curLoad < leastLoad && m_processors[i]->isReady()) {
+        if (curLoad < leastLoad) {
             leastLoad = curLoad;
             leastLoadProcId = i;
         }
@@ -348,7 +381,8 @@ size_t ProcessorPool::getLeastLoadProcId() {
     return leastLoadProcId;
 }
 
-std::vector<std::shared_ptr<Processor>> ProcessorPool::getProcessors() {
+std::vector<std::shared_ptr<Processor>> ProcessorPool::getProcessors_nolock()
+    const {
     return m_processors;
 }
 

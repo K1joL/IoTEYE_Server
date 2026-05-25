@@ -109,14 +109,15 @@ public:
     size_t getProcCount() const;
 
 protected:
-    bool adjustProcessors();
-    bool addProcessor();
-    bool removeProcessor();
-    bool redistributeObjects(std::shared_ptr<Processor> processor);
-    std::shared_ptr<Processor> getLeastLoadProc();
-    std::shared_ptr<Processor> getProc(size_t id);
-    size_t getLeastLoadProcId();
-    std::vector<std::shared_ptr<Processor>> getProcessors();
+    std::shared_ptr<Processor> getProcessorContains_nolock(types::objID id) const;
+    bool adjustProcessors_nolock();
+    bool addProcessor_nolock();
+    bool removeProcessor_nolock();
+    bool redistributeObjects_nolock(const std::shared_ptr<Processor>& processor);
+    std::shared_ptr<Processor> getLeastLoadProc_nolock() const;
+    std::shared_ptr<Processor> getProc_nolock(size_t id) const;
+    size_t getLeastLoadProcId_nolock() const;
+    std::vector<std::shared_ptr<Processor>> getProcessors_nolock() const;
 
 public:
     class Builder {
@@ -159,13 +160,13 @@ private:
     // Internal
 
     /// @brief Processor counter
-    size_t m_procCount = 0;
+    std::atomic<size_t> m_procCount = 0;
     /// @brief Object counter
-    size_t m_objCount = 0;
+    std::atomic<size_t> m_objCount = 0;
     /// @brief Vector of processors currently in use
     std::vector<std::shared_ptr<Processor>> m_processors;
     /// @brief Mutex to sync pool operations
-    mutable std::recursive_mutex m_poolMutex;
+    mutable std::mutex m_poolMutex;
 };
 
 }  // namespace ioteye::utils
