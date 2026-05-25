@@ -34,7 +34,7 @@ public:
     bool removeObject(std::shared_ptr<utils::ManagedObject> obj);
     bool removeObject(types::objID id);
     bool moveObject(std::shared_ptr<Processor> other, types::objID id);
-    ObjectsMap& getObjects();
+    std::vector<types::objID> getObjectIds() const;
     void setReady(bool isReady);
     void stop();
 
@@ -162,6 +162,7 @@ private:
     size_t m_procCount = 0;
     /// @brief Object counter
     size_t m_objCount = 0;
+    /// @brief Vector of processors currently in use
     std::vector<std::shared_ptr<Processor>> m_processors;
     /// @brief Mutex to sync pool operations
     mutable std::recursive_mutex m_poolMutex;

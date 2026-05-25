@@ -118,8 +118,14 @@ bool Processor::isReady() const {
     return m_isReady.load();
 }
 
-Processor::ObjectsMap& Processor::getObjects() {
-    return m_objects;
+std::vector<types::objID> Processor::getObjectIds() const {
+    std::shared_lock<std::shared_mutex> lock(m_mutex);
+    std::vector<types::objID> ids;
+    ids.reserve(m_objects.size());
+    for (const auto& [id, ptr] : m_objects) {
+        ids.push_back(id);
+    }
+    return ids;
 }
 
 ProcessorPool::ProcessorPool(size_t maxProc, size_t minProc,
@@ -244,6 +250,9 @@ size_t ProcessorPool::getProcCount() const {
 
 bool ProcessorPool::adjustProcessors() {
     std::unique_lock<std::recursive_mutex> lock(m_poolMutex);
+    if (m_procCount == 0 || m_procCapacity == 0) {
+        return false;
+    }
     loadt load = (100 * m_objCount) / (m_procCapacity * m_procCount);
     if (m_maxProc != m_procCount && load >= m_maxLoad) {
         return addProcessor();
@@ -288,13 +297,27 @@ bool ProcessorPool::removeProcessor() {
 
 bool ProcessorPool::redistributeObjects(std::shared_ptr<Processor> processor) {
     std::unique_lock<std::recursive_mutex> poolLock(m_poolMutex);
-    auto objectsToRedistribute = processor->getObjects();
-    for (auto objPair : objectsToRedistribute) {
+
+    auto ids = processor->getObjectIds();
+
+    for (auto id : ids) {
+        if (!processor->contains(id)) {
+            continue;
+        }
+
         auto targetProc = getLeastLoadProc();
-        if (!processor->moveObject(targetProc, objPair.second->getID())) {
+        if (!targetProc || targetProc == processor) {
+            return false;
+        }
+
+        if (!processor->moveObject(targetProc, id)) {
+            if (!processor->contains(id)) {
+                continue;
+            }
             return false;
         }
     }
+
     return true;
 }
 
