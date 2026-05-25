@@ -57,9 +57,8 @@ void Processor::run() {
 
         if (currentObj) {
             currentObj->process();
-        } else {
-            std::this_thread::sleep_for(m_sleepInterval);
         }
+        std::this_thread::sleep_for(m_sleepInterval);
     }
 }
 
