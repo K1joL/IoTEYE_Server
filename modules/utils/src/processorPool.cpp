@@ -93,12 +93,12 @@ size_t Processor::getSize() const {
 
 bool Processor::contains(std::shared_ptr<ManagedObject> obj) const {
     std::shared_lock<std::shared_mutex> lock(m_mutex);
-    return m_objects.find(obj->getObjID()) != m_objects.end();
+    return m_objects.contains(obj->getObjID());
 }
 
 bool Processor::contains(ObjID id) const {
     std::shared_lock<std::shared_mutex> lock(m_mutex);
-    return m_objects.find(id) != m_objects.end();
+    return m_objects.contains(id);
 }
 
 void Processor::setReady(bool isReady) {
