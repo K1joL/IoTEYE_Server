@@ -35,6 +35,7 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace ioteye {
 
@@ -75,8 +76,8 @@ public:
         : m_fileHandler(fileHandler) {
     }
     virtual ~IFileManager() = default;
-    virtual bool saveFile() = 0;
-    virtual bool loadFile() = 0;
+    virtual bool saveFile(const types::DeviceMap& deviceMap) = 0;
+    virtual std::vector<types::DevicePtr> loadFile() = 0;
 
 protected:
     std::shared_ptr<FileHandler> m_fileHandler;
@@ -84,15 +85,11 @@ protected:
 
 class DeviceFileManager : public IFileManager {
 public:
-    DeviceFileManager(std::shared_ptr<FileHandler> fileHandler,
-                      std::unordered_map<uint64_t, types::DevicePtr>& devices)
-        : IFileManager(fileHandler), m_devicesMap(devices) {
+    DeviceFileManager(std::shared_ptr<FileHandler> fileHandler)
+        : IFileManager(fileHandler) {
     }
-    bool saveFile() override;
-    bool loadFile() override;
-
-private:
-    std::unordered_map<uint64_t, types::DevicePtr>& m_devicesMap;
+    bool saveFile(const types::DeviceMap& deviceMap) override;
+    std::vector<types::DevicePtr> loadFile() override;
 };
 
 }  // namespace ioteye

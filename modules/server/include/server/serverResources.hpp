@@ -27,10 +27,16 @@
 #include <common/adminOptions.hpp>
 #include <common/types.hpp>
 #include <device/device.hpp>
+#include <expected>
 #include <ioteyeserver.hpp>
 #include <memory>
 #include <persistence/historyLogger/pinHistoryLogger.hpp>
 #include <unordered_map>
+
+namespace ioteye {
+class DeviceManager;
+
+}  // namespace ioteye
 
 namespace ioteye::resource {
 using ao = ioteye::AdminOptions;
@@ -38,44 +44,57 @@ using ao = ioteye::AdminOptions;
 using std::cout;
 using std::endl;
 
+using DeviceManagerPtr = std::shared_ptr<DeviceManager>;
+using HistoryLoggerPtr = std::shared_ptr<persistence::IPinHistoryLogger>;
+
 #define HEADER_DEVICE_TYPE "X-Device-Type"
 
-extern std::unordered_map<uint64_t, types::DevicePtr> s_idDeviceMap;
-
-using DeviceIter = std::unordered_map<uint64_t, types::DevicePtr>::iterator;
-uint16_t authCheck(const std::string& token, DeviceIter& deviceIter);
-
-class PinsResource : public HttpResourceHandler {
+class ServerResource : public HttpResourceHandler {
 public:
-    PinsResource(std::shared_ptr<persistence::IPinHistoryLogger> historyLogger);
-    std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
-    std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
-    std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
-    std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
+    ServerResource(DeviceManagerPtr deviceManager,
+                   HistoryLoggerPtr historyLogger);
 
-private:
-    std::shared_ptr<persistence::IPinHistoryLogger> m_pinHistoryLogger;
+protected:
+    /// @brief Token authentication. Checks whether a device with the specified
+    /// token exists.
+    /// @param token The device token with which to authenticate.
+    /// @return DevicePtr on success, HttpStatusCode error on failure.
+    std::expected<types::DevicePtr, HttpStatusCode> authCheck(
+        const std::string& token);
+
+protected:
+    DeviceManagerPtr m_deviceManager;
+    HistoryLoggerPtr m_historyLogger;
 };
 
-class DeviceResource : public HttpResourceHandler {
+class PinsResource : public ServerResource {
 public:
+    using ServerResource::ServerResource;
+
     std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
 };
 
-class HistoryResource : public HttpResourceHandler {
+class DeviceResource : public ServerResource {
 public:
-    HistoryResource(
-        std::shared_ptr<persistence::IPinHistoryLogger> historyLogger);
+    using ServerResource::ServerResource;
+
     std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
     std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
+};
 
-private:
-    std::shared_ptr<persistence::IPinHistoryLogger> m_pinHistoryLogger;
+class HistoryResource : public ServerResource {
+public:
+    using ServerResource::ServerResource;
+
+    std::shared_ptr<HttpResponse> renderPOST(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderGET(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderPUT(const HttpRequest& req) override;
+    std::shared_ptr<HttpResponse> renderDELETE(const HttpRequest& req) override;
 };
 }  // namespace ioteye::resource
 

@@ -13,7 +13,7 @@ target_link_libraries(ioteye_server
     PUBLIC
     ioteye::common
     ioteye::device
-    # ioteye::device_manager
+    ioteye::device_manager
     ioteye::persistence
     PRIVATE
     ioteyeserver::ioteyeserver

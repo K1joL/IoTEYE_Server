@@ -9,11 +9,8 @@ ManagedObject::ManagedObject() {
     ++m_idSequence;
 }
 
-types::objID ManagedObject::getID() const {
+types::ObjID ManagedObject::getObjID() const {
     return m_id;
-}
-
-void ManagedObject::process() {
 }
 
 }  // namespace ioteye::utils

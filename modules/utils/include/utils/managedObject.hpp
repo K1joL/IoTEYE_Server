@@ -7,11 +7,11 @@ class ManagedObject {
 public:
     ManagedObject();
     virtual ~ManagedObject() = default;
-    types::objID getID() const;
-    virtual void process();
+    types::ObjID getObjID() const;
+    virtual void process() = 0;
 
 protected:
-    types::objID m_id;
+    types::ObjID m_id;
     mutable std::shared_mutex m_sharedMutex;
 
 private:

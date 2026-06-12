@@ -19,7 +19,8 @@
 cmake_minimum_required(VERSION 3.18)
 project(ioteyeServer VERSION 2.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_compile_options(-Wall -Wextra -Wpedantic)
 
@@ -89,7 +90,7 @@ add_subdirectory(modules/common)
 add_subdirectory(modules/utils)
 add_subdirectory(modules/device)
 add_subdirectory(modules/persistence)
-# add_subdirectory(modules/device_manager)
+add_subdirectory(modules/deviceManager)
 add_subdirectory(modules/server)
 add_subdirectory(app)
 

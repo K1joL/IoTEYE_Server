@@ -27,7 +27,7 @@ set(LIB_LIST
     ioteye::utils
     ioteye::device
     ioteye::persistence
-    # ioteye::device_manager
+    ioteye::device_manager
     ioteye::server
     ioteyeserver::ioteyeserver
     Threads::Threads

@@ -23,7 +23,7 @@ int64_t PinHistoryLogger::nowMs() {
 
 void PinHistoryLogger::record(const ioteye::Device& device) {
     std::lock_guard<std::mutex> lock(m_mutex);
-    const auto id = device.getID();
+    const auto id = device.getDeviceID();
     const auto now = nowMs();
     auto& last = m_lastRecordMs[id];
     if (now - last < static_cast<int64_t>(m_config.intervalMs))
@@ -44,7 +44,7 @@ void PinHistoryLogger::appendSnapshot(const ioteye::Device& device) {
 
     json row;
     row["ts"] = nowMs();
-    row["device_id"] = device.getID();
+    row["device_id"] = device.getDeviceID();
     row["pins"] = std::move(pins);
 
     std::ofstream out(m_config.filePath, std::ios::app);

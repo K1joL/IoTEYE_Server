@@ -23,6 +23,7 @@
 
 #include <common/adminOptions.hpp>
 #include <common/logging.hpp>
+#include <common/types.hpp>
 #include <persistence/fileManager.hpp>
 
 using json = nlohmann::json;
@@ -32,28 +33,28 @@ namespace ioteye {
 
 using namespace ioteye::types;
 
-bool DeviceFileManager::saveFile() {
+bool DeviceFileManager::saveFile(const types::DeviceMap& deviceMap) {
     json j;
-    for (const auto& pair : m_devicesMap) {
+    for (const auto& [id, devicePtr] : deviceMap) {
         json device;
-        device["id"] = pair.second->getID();
-        device["token"] = pair.second->getToken();
-        device["maxPins"] = pair.second->getMaxPins();
-        device["pinsCounter"] = pair.second->pinsCreated();
+        device["id"] = devicePtr->getDeviceID();
+        device["token"] = devicePtr->getToken();
+        device["maxPins"] = devicePtr->getMaxPins();
+        device["pinsCounter"] = devicePtr->pinsCreated();
         // Save virtual pins data
         json intPins = json::array();
-        for (const auto& pin : pair.second->getIntPins())
+        for (const auto& pin : devicePtr->getIntPins())
             intPins.push_back({pin.first, pin.second});
         device["intPins"] = intPins;
 
         json doublePins = json::array();
-        for (const auto& pin : pair.second->getDoublePins()) {
+        for (const auto& pin : devicePtr->getDoublePins()) {
             doublePins.push_back({pin.first, pin.second});
         }
         device["doublePins"] = doublePins;
 
         json stringPins = json::array();
-        for (const auto& pin : pair.second->getStringPins()) {
+        for (const auto& pin : devicePtr->getStringPins()) {
             stringPins.push_back({pin.first, pin.second});
         }
         device["stringPins"] = stringPins;
@@ -63,11 +64,11 @@ bool DeviceFileManager::saveFile() {
     return true;
 }
 
-bool DeviceFileManager::loadFile() {
+std::vector<DevicePtr> DeviceFileManager::loadFile() {
     std::string fileContent;
+    std::vector<DevicePtr> devicesToLoad;
     m_fileHandler->readAll(fileContent);
     json j = json::parse(fileContent);
-    int count = 0;
     for (const auto& device : j) {
         PinsIntMap intPins;
         PinsDoubleMap doublePins;
@@ -100,17 +101,16 @@ bool DeviceFileManager::loadFile() {
                 .setOutdatedDelay(ao::getOptions().getOutdatedDelay())
                 .build());
         // Initialize other relevant data if necessary
-        auto emplaceIt = m_devicesMap.emplace(newDevice->getID(), newDevice);
+        devicesToLoad.push_back(newDevice);
         // server::debug::log(newDevice->getPinsTypes().size());
         // server::debug::log(newDevice->getIntPins().size());
         // server::debug::log(newDevice->getStringPins().size());
         // server::debug::log(newDevice->getDoublePins().size());
-        ++count;
         ioteye::server::debug::logStatus(
-            "Device loading ", count, '/', j.size(),
-            emplaceIt.second ? " Success" : "Failed");
+            "Device loading ", devicesToLoad.size(), '/', j.size(),
+            newDevice ? " Success" : "Failed");
     }
-    return true;
+    return devicesToLoad;
 }
 
 FileHandler::~FileHandler() {

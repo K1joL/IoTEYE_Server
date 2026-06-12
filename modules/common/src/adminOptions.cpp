@@ -26,16 +26,16 @@
 namespace ioteye {
 
 void AdminOptions::handleMaxPins(uint16_t value) {
-    m_maxPinsOpt = value;
+    m_maxPinsOpt = value > 0 ? value : 255;
 }
 void AdminOptions::handleOutdatedDelay(uint16_t value) {
-    m_outdatedDelayOpt = value;
+    m_outdatedDelayOpt = value > 0 ? value : 500;
 }
 void AdminOptions::handleOfflineDelay(uint16_t value) {
-    m_offlineDelayOpt = value;
+    m_offlineDelayOpt = value > 0 ? value : 1000;
 }
 void AdminOptions::handleDeadDelay(uint16_t value) {
-    m_deadDelayOpt = value;
+    m_deadDelayOpt = value > 0 ? value : 10000;
 }
 
 void AdminOptions::handleHistoryInterval(uint32_t value) {

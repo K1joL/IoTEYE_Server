@@ -4,9 +4,9 @@
 #include <memory>
 #include <random>
 
-#include <processorPool.hpp>
+#include <utils/processorPool.hpp>
 
-using namespace ioteye;
+using namespace ioteye::utils;
 
 // Тестовый класс, наследник ManagedObject
 class TestObject : public ManagedObject {

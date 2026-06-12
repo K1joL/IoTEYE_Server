@@ -63,19 +63,19 @@ void Processor::run() {
 
 bool Processor::addObject(std::shared_ptr<ManagedObject> obj) {
     std::unique_lock<std::shared_mutex> lock(m_mutex);
-    return m_objects.emplace(obj->getID(), obj).second;
+    return m_objects.emplace(obj->getObjID(), obj).second;
 }
 
 bool Processor::removeObject(std::shared_ptr<ManagedObject> obj) {
-    return removeObject(obj->getID());
+    return removeObject(obj->getObjID());
 }
 
-bool Processor::removeObject(objID id) {
+bool Processor::removeObject(ObjID id) {
     std::unique_lock<std::shared_mutex> lock(m_mutex);
     return m_objects.erase(id);
 }
 
-bool Processor::moveObject(std::shared_ptr<Processor> other, objID id) {
+bool Processor::moveObject(std::shared_ptr<Processor> other, ObjID id) {
     std::unique_lock<std::shared_mutex> sourceLock(m_mutex, std::defer_lock);
     std::unique_lock<std::shared_mutex> otherLock(other->m_mutex,
                                                   std::defer_lock);
@@ -93,10 +93,10 @@ size_t Processor::getSize() const {
 
 bool Processor::contains(std::shared_ptr<ManagedObject> obj) const {
     std::shared_lock<std::shared_mutex> lock(m_mutex);
-    return m_objects.find(obj->getID()) != m_objects.end();
+    return m_objects.find(obj->getObjID()) != m_objects.end();
 }
 
-bool Processor::contains(objID id) const {
+bool Processor::contains(ObjID id) const {
     std::shared_lock<std::shared_mutex> lock(m_mutex);
     return m_objects.find(id) != m_objects.end();
 }
@@ -118,9 +118,9 @@ bool Processor::isReady() const {
     return m_isReady.load();
 }
 
-std::vector<types::objID> Processor::getObjectIds() const {
+std::vector<types::ObjID> Processor::getObjectIds() const {
     std::shared_lock<std::shared_mutex> lock(m_mutex);
-    std::vector<types::objID> ids;
+    std::vector<types::ObjID> ids;
     ids.reserve(m_objects.size());
     for (const auto& [id, ptr] : m_objects) {
         ids.push_back(id);
@@ -207,10 +207,12 @@ bool ProcessorPool::registerObject(const std::shared_ptr<ManagedObject> obj) {
 }
 
 bool ProcessorPool::removeObject(std::shared_ptr<ManagedObject> obj) {
-    return removeObject(obj->getID());
+    if(!obj)
+        return false;
+    return removeObject(obj->getObjID());
 }
 
-bool ProcessorPool::removeObject(objID objId) {
+bool ProcessorPool::removeObject(ObjID objId) {
     std::lock_guard<std::mutex> lock(m_poolMutex);
 
     if (m_processors.empty()) {
@@ -233,10 +235,10 @@ bool ProcessorPool::removeObject(objID objId) {
 std::shared_ptr<Processor> ProcessorPool::getProcessorContains(
     const std::shared_ptr<ManagedObject> obj) const {
     std::lock_guard<std::mutex> lock(m_poolMutex);
-    return getProcessorContains_nolock(obj->getID());
+    return getProcessorContains_nolock(obj->getObjID());
 }
 
-std::shared_ptr<Processor> ProcessorPool::getProcessorContains(objID id) const {
+std::shared_ptr<Processor> ProcessorPool::getProcessorContains(ObjID id) const {
     std::lock_guard<std::mutex> lock(m_poolMutex);
     return getProcessorContains_nolock(id);
 }
@@ -258,7 +260,7 @@ size_t ProcessorPool::getProcCount() const {
 }
 
 std::shared_ptr<Processor> ProcessorPool::getProcessorContains_nolock(
-    objID id) const {
+    ObjID id) const {
     for (size_t i = 0; i < m_processors.size(); ++i)
         if (m_processors[i]->contains(id))
             return m_processors[i];

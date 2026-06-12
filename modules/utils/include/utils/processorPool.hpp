@@ -1,3 +1,26 @@
+/*# MIT License
+
+# Copyright (c) 2025 Shults Bogdan aka K1joL
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+*/
+
 #ifndef IOTEYE_PROCESSOR_POOL_HPP
 #define IOTEYE_PROCESSOR_POOL_HPP
 
@@ -18,7 +41,7 @@ namespace ioteye::utils {
 
 class Processor {
     using ObjectsMap =
-        std::unordered_map<types::objID, std::shared_ptr<utils::ManagedObject>>;
+        std::unordered_map<types::ObjID, std::shared_ptr<utils::ManagedObject>>;
 
 public:
     Processor(std::chrono::milliseconds sleepInterval);
@@ -32,14 +55,14 @@ public:
     void run();
     bool addObject(std::shared_ptr<utils::ManagedObject> obj);
     bool removeObject(std::shared_ptr<utils::ManagedObject> obj);
-    bool removeObject(types::objID id);
-    bool moveObject(std::shared_ptr<Processor> other, types::objID id);
-    std::vector<types::objID> getObjectIds() const;
+    bool removeObject(types::ObjID id);
+    bool moveObject(std::shared_ptr<Processor> other, types::ObjID id);
+    std::vector<types::ObjID> getObjectIds() const;
     void setReady(bool isReady);
     void stop();
 
     bool contains(std::shared_ptr<utils::ManagedObject> obj) const;
-    bool contains(types::objID id) const;
+    bool contains(types::ObjID id) const;
     size_t getSize() const;
     bool isRunning() const;
     bool isReady() const;
@@ -100,16 +123,16 @@ public:
 
     bool registerObject(std::shared_ptr<utils::ManagedObject> obj);
     bool removeObject(std::shared_ptr<utils::ManagedObject> obj);
-    bool removeObject(types::objID id);
+    bool removeObject(types::ObjID id);
     std::shared_ptr<Processor> getProcessorContains(
         const std::shared_ptr<utils::ManagedObject> obj) const;
-    std::shared_ptr<Processor> getProcessorContains(types::objID id) const;
+    std::shared_ptr<Processor> getProcessorContains(types::ObjID id) const;
     void stopAll();
     size_t getObjCount() const;
     size_t getProcCount() const;
 
 protected:
-    std::shared_ptr<Processor> getProcessorContains_nolock(types::objID id) const;
+    std::shared_ptr<Processor> getProcessorContains_nolock(types::ObjID id) const;
     bool adjustProcessors_nolock();
     bool addProcessor_nolock();
     bool removeProcessor_nolock();

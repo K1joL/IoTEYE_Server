@@ -23,13 +23,16 @@
 
 #include <common/adminOptions.hpp>
 #include <common/logging.hpp>
+#include <common/types.hpp>
+#include <deviceManager/deviceManager.hpp>
 #include <iostream>
 #include <ioteyeserver.hpp>
 #include <persistence/fileManager.hpp>
 #include <persistence/historyLogger/pinHistoryLogger.hpp>
 #include <server/serverResources.hpp>
+#include <utils/processorPool.hpp>
+#include <vector>
 
-using ioteye::resource::s_idDeviceMap;
 using std::cout;
 using std::endl;
 
@@ -43,13 +46,21 @@ int main(int argc, char** argv) {
     // Load devices from file
     std::shared_ptr<ioteye::FileHandler> devicesJsonHandler;
     std::shared_ptr<ioteye::DeviceFileManager> deviceJsonManager;
+    std::shared_ptr<ioteye::DeviceManager> deviceManager;
+    std::shared_ptr<ioteye::utils::ProcessorPool> processorPool;
     try {
+        processorPool = std::make_shared<ioteye::utils::ProcessorPool>();
+        deviceManager = std::make_shared<ioteye::DeviceManager>(processorPool);
         devicesJsonHandler = std::make_shared<ioteye::FileHandler>(
             "devices.json", std::ios::in | std::ios::out);
-        deviceJsonManager = std::make_shared<ioteye::DeviceFileManager>(
-            devicesJsonHandler, s_idDeviceMap);
-        if (!deviceJsonManager->loadFile())
+        deviceJsonManager =
+            std::make_shared<ioteye::DeviceFileManager>(devicesJsonHandler);
+        auto devicesToLoad = deviceJsonManager->loadFile();
+        if (devicesToLoad.empty())
             std::cout << "Failed to load devices from file." << std::endl;
+        for (auto& device : devicesToLoad) {
+            deviceManager->createDevice(std::move(device));
+        }
     } catch (std::runtime_error& e) {
         std::cerr << e.what() << "\nDevice information will not be loaded!"
                   << std::endl;
@@ -66,11 +77,12 @@ int main(int argc, char** argv) {
     auto pinHistoryLogger =
         std::make_shared<ioteye::persistence::PinHistoryLogger>(cfg);
 
-    auto pins =
-        std::make_shared<ioteye::resource::PinsResource>(pinHistoryLogger);
-    auto devices = std::make_shared<ioteye::resource::DeviceResource>();
-    auto history =
-        std::make_shared<ioteye::resource::HistoryResource>(pinHistoryLogger);
+    auto pins = std::make_shared<ioteye::resource::PinsResource>(
+        deviceManager, pinHistoryLogger);
+    auto devices = std::make_shared<ioteye::resource::DeviceResource>(
+        deviceManager, pinHistoryLogger);
+    auto history = std::make_shared<ioteye::resource::HistoryResource>(
+        deviceManager, pinHistoryLogger);
     ioteye::Webserver ws =
         ioteye::Webserver::Builder()
             .setTcpPort(8080)
@@ -104,7 +116,7 @@ int main(int argc, char** argv) {
             break;
         }
         if (key == 'm') {
-            std::cout << s_idDeviceMap.size() << std::endl;
+            std::cout << deviceManager->getSize() << std::endl;
         }
     }
     // Save devices to file
@@ -113,9 +125,9 @@ int main(int argc, char** argv) {
             devicesJsonHandler = std::make_shared<ioteye::FileHandler>(
                 "devices.json", std::ios::in | std::ios::out);
         if (deviceJsonManager == nullptr)
-            deviceJsonManager = std::make_shared<ioteye::DeviceFileManager>(
-                devicesJsonHandler, s_idDeviceMap);
-        if (!deviceJsonManager->saveFile())
+            deviceJsonManager =
+                std::make_shared<ioteye::DeviceFileManager>(devicesJsonHandler);
+        if (!deviceJsonManager->saveFile(deviceManager->getDevices()))
             std::cout << "Failed to save device information." << std::endl;
     } catch (std::runtime_error& e) {
         std::cerr << e.what() << "\nDevice information will not be saved!"

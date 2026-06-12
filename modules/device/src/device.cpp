@@ -28,162 +28,62 @@ namespace ioteye {
 using namespace ioteye::types;
 using namespace server::debug;
 
-Device::StateTimer::StateTimer(std::function<void(DeviceState)> callback,
-                               std::mutex& mutex)
-    : m_changingMutex(mutex), m_cbChangeState{callback}, m_isStopped(false) {
-    m_timerThread = std::thread([this]() { threadLoop(); });
-}
-
-Device::StateTimer::StateTimer(std::function<void(DeviceState)> callback,
-                               std::mutex& mutex, ms offlineDelay,
-                               ms outdatedDelay)
-    : StateTimer(callback, mutex) {
-    m_offlineDelay = offlineDelay;
-    m_outdatedDelay = outdatedDelay;
-}
-
-void Device::StateTimer::threadLoop() {
-    while (!m_isStopped) {
-        if (m_wasPing) {
-            m_start = ChronoClock::now();
-            m_wasPing = false;
-            changeState(DeviceState::ONLINE);
-        }
-
-        auto now = ChronoClock::now();
-        auto elapsed = now - m_start;
-
-        switch (m_currentState) {
-            case DeviceState::ONLINE:
-                if (std::chrono::duration_cast<ms>(elapsed) >=
-                    m_outdatedDelay) {
-                    changeState(DeviceState::OUTDATED);
-                }
-                break;
-            case DeviceState::OUTDATED:
-                if (std::chrono::duration_cast<ms>(elapsed) >= m_offlineDelay) {
-                    changeState(DeviceState::OFFLINE);
-                }
-                break;
-            case DeviceState::OFFLINE:
-                if (std::chrono::duration_cast<ms>(elapsed) >= m_deadDelay) {
-                    changeState(DeviceState::DEAD);
-                }
-                break;
-            case DeviceState::DEAD:
-                // Wait until destructed
-                break;
-            default:
-                break;
-        }
-    }
-}
-
-void Device::StateTimer::ping() {
-    m_wasPing = true;
-}
-
-void Device::StateTimer::setPingFalse() {
-    m_wasPing = false;
-}
-
-bool Device::StateTimer::wasPing() {
-    return m_wasPing;
-}
-
-void Device::StateTimer::stop() {
-    m_isStopped = true;
-}
-
-void Device::StateTimer::setDelays(ms outdatedDelay, ms offlineDelay,
-                                   ms deadDelay) {
-    std::lock_guard<std::mutex> lock(m_changingMutex);
-    m_outdatedDelay = outdatedDelay;
-    m_offlineDelay = offlineDelay;
-    m_deadDelay = deadDelay;
-}
-
-ms Device::StateTimer::getRemainingTime() const {
-    auto now = ChronoClock::now();
-    auto elapsed = now - m_start;
-    auto remaining = m_offlineDelay - std::chrono::duration_cast<ms>(elapsed);
-    return (remaining > ms(0)) ? remaining : ms(0);
-}
-
-bool Device::StateTimer::isStopped() const {
-    return m_isStopped;
-}
-
-void Device::StateTimer::changeState(DeviceState newState) {
-    m_currentState = newState;
-    std::lock_guard<std::mutex> lock(m_changingMutex);
-    m_cbChangeState(newState);
-}
-
-ms Device::StateTimer::getOfflineDelay() {
-    return m_offlineDelay;
-}
-
-ms Device::StateTimer::getOutdatedDelay() {
-    return m_outdatedDelay;
-}
-
-Device::StateTimer::~StateTimer() {
-    // log("StateTimer desctructor");
-    stop();
-    if (m_timerThread.joinable())
-        m_timerThread.join();
-}
-
-DeviceID Device::m_idSequence = 1;
+std::atomic<DeviceID> Device::m_idSequence{1};
 
 Device::Device() {
-    m_id = m_idSequence;
-    m_idSequence++;
-    m_stateTimer = std::make_shared<StateTimer>(
-        std::bind(&Device::changeState, this, std::placeholders::_1),
-        m_timerMutex);
+    m_id = m_idSequence.fetch_add(1, std::memory_order_relaxed);
     generateToken();
 }
 
 Device::Device(DelayMs outdatedDelay, DelayMs offlineDelay, DelayMs deadDelay,
-               PinsQuantity maxPins, bool /* deleteAfterOffline */)
-    : Device() {
-    m_stateTimer->setDelays(ms(outdatedDelay), ms(offlineDelay), ms(deadDelay));
-    m_maxPins = maxPins;
+               PinsQuantity maxPins, bool deleteAfterDeath)
+    : m_outdatedDelay(outdatedDelay),
+      m_offlineDelay(offlineDelay),
+      m_deadDelay(deadDelay),
+      m_maxPins(maxPins),
+      m_deleteAfterDeath(deleteAfterDeath) {
+    m_state = DeviceState::ONLINE;
+    m_id = m_idSequence.fetch_add(1, std::memory_order_relaxed);
+    generateToken();
 }
 
 Device::Device(Device&& other) noexcept
     : m_id(other.m_id),
       m_token(std::move(other.m_token)),
+      m_state(other.m_state.load()),
+      m_outdatedDelay(other.m_outdatedDelay),
+      m_offlineDelay(other.m_offlineDelay),
+      m_deadDelay(other.m_deadDelay),
       m_pinsType(std::move(other.m_pinsType)),
       m_intPins(std::move(other.m_intPins)),
       m_doublePins(std::move(other.m_doublePins)),
       m_stringPins(std::move(other.m_stringPins)),
       m_pinsCounter(other.m_pinsCounter),
-      m_maxPins(other.m_maxPins) {
-    m_stateTimer = std::make_shared<StateTimer>(
-        std::bind(&Device::changeState, this, std::placeholders::_1),
-        m_timerMutex, other.m_stateTimer->getOfflineDelay(),
-        other.m_stateTimer->getOutdatedDelay());
+      m_maxPins(other.m_maxPins),
+      m_deleteAfterDeath(other.m_deleteAfterDeath) {
 }
 
 Device& Device::operator=(Device&& other) noexcept {
-    if (this != &other) {
-        m_id = other.m_id;
-        m_token = std::move(other.m_token);
-        m_pinsType = std::move(other.m_pinsType);
-        m_intPins = std::move(other.m_intPins);
-        m_doublePins = std::move(other.m_doublePins);
-        m_stringPins = std::move(other.m_stringPins);
-        m_pinsCounter = other.m_pinsCounter;
-        m_maxPins = other.m_maxPins;
-        m_stateTimer = std::make_shared<StateTimer>(
-            std::bind(&Device::changeState, this, std::placeholders::_1),
-            m_timerMutex, other.m_stateTimer->getOfflineDelay(),
-            other.m_stateTimer->getOutdatedDelay());
-        adjustIdSequence(other.m_id);
+    if (this == &other) {
+        return *this;
     }
+
+    m_id = other.m_id;
+    m_token = std::move(other.m_token);
+    m_state.store(other.m_state.load());
+    m_outdatedDelay = other.m_outdatedDelay;
+    m_offlineDelay = other.m_offlineDelay;
+    m_deadDelay = other.m_deadDelay;
+    m_maxPins = other.m_maxPins;
+    m_pinsType = std::move(other.m_pinsType);
+    m_intPins = std::move(other.m_intPins);
+    m_doublePins = std::move(other.m_doublePins);
+    m_stringPins = std::move(other.m_stringPins);
+    m_pinsCounter = other.m_pinsCounter;
+    m_deleteAfterDeath = other.m_deleteAfterDeath;
+
+    adjustIdSequence(other.m_id);
+
     return *this;
 }
 
@@ -192,47 +92,60 @@ void Device::generateToken() {
         jwt::create()
             .set_type("JWS")
             .set_payload_claim("deviceID", jwt::claim(std::to_string(m_id)))
-            .sign(jwt::algorithm::hs256{
-                std::to_string(m_stateTimer->getRemainingTime().count()) +
-                std::to_string(65 + m_idSequence % 26)});
+            .sign(jwt::algorithm::hs256{std::to_string(65 + m_id % 26)});
     m_token = token;
 }
 
 std::string Device::getToken() const {
+    std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
     return m_token;
 }
 
-DeviceID Device::getID() const {
+DeviceID Device::getDeviceID() const {
+    std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
     return m_id;
 }
 
 DeviceState Device::getState() const {
-    return m_state;
+    return m_state.load();
 }
 
 void Device::changeState(DeviceState state) {
-    if (state != m_state) {
-        m_state = state;
-        // log("Changed State to ", char(state + 48));
+    {
+        std::unique_lock<std::shared_mutex> lock(m_sharedMutex);
+        if (state != m_state.load()) {
+            m_state.store(state);
+            // log("Changed State to ", char(state + 48));
+        }
     }
     if (m_onStateChange)
         m_onStateChange(state);
 }
 
 void Device::ping() {
-    m_stateTimer->ping();
+    m_wasPing.store(true);
 }
 
 Device::~Device() {
     // log("device desctructor");
 }
 
+void Device::setDelays(types::DelayMs outdated, types::DelayMs offline,
+                       types::DelayMs dead) {
+    std::unique_lock<std::shared_mutex> lock(m_sharedMutex);
+    m_outdatedDelay = types::ms(outdated);
+    m_offlineDelay = types::ms(offline);
+    m_deadDelay = types::ms(dead);
+}
+
 void Device::setOnStateChange(std::function<void(DeviceState)> cb) {
+    std::unique_lock<std::shared_mutex> lock(m_sharedMutex);
     m_onStateChange = std::move(cb);
 }
 
 int Device::addPin(PinId pinNumber, const std::string& dataType,
                    const std::string& defaultData) {
+    std::unique_lock<std::shared_mutex> lock(m_sharedMutex);
     // the number of pins must be less than m_maxPins
     if (m_pinsCounter == m_maxPins) {
         log(LogLevel::WARNING, "the number of pins must be less than ",
@@ -273,6 +186,7 @@ int Device::addPin(PinId pinNumber, const std::string& dataType,
 }
 
 int Device::changePin(PinId pinNumber, const std::string& data) {
+    std::unique_lock<std::shared_mutex> lock(m_sharedMutex);
     if (m_pinsType.find(pinNumber) == m_pinsType.end())
         return 1;
 
@@ -295,6 +209,7 @@ int Device::changePin(PinId pinNumber, const std::string& data) {
 }
 
 int Device::removePin(PinId pinNumber) {
+    std::unique_lock<std::shared_mutex> lock(m_sharedMutex);
     if (m_pinsType.find(pinNumber) == m_pinsType.end())
         return 1;
 
@@ -319,6 +234,7 @@ int Device::removePin(PinId pinNumber) {
 }
 
 std::string Device::getPin(PinId pinNumber) const {
+    std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
     if (m_pinsType.find(pinNumber) == m_pinsType.end())
         return std::string{""};
 
@@ -336,33 +252,108 @@ std::string Device::getPin(PinId pinNumber) const {
 }
 
 PinsQuantity Device::pinsCreated() const {
+    std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
     return m_pinsCounter;
 }
 
 PinsQuantity Device::getMaxPins() const {
+    std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
     return m_maxPins;
+}
+
+bool Device::isDeleteAfterDeath() const {
+    return m_deleteAfterDeath;
 }
 
 // Getters for pins maps
 const PinsTypeMap& Device::getPinsTypes() const {
+    std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
     return m_pinsType;
 }
 
 const PinsIntMap& Device::getIntPins() const {
+    std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
     return m_intPins;
 }
 
 const PinsDoubleMap& Device::getDoublePins() const {
+    std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
     return m_doublePins;
 }
 
 const PinsStringMap& Device::getStringPins() const {
+    std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
     return m_stringPins;
 }
 
+void Device::process() {
+    bool hadPing = m_wasPing.exchange(false);
+    auto now = ChronoClock::now();
+
+    if (hadPing) {
+        std::unique_lock<std::shared_mutex> lock(m_sharedMutex);
+        m_start = now;
+        lock.unlock();
+        changeState(DeviceState::ONLINE);
+    }
+
+    types::ChronoClock::time_point startCopy;
+    types::ms outdatedDelayCopy;
+    types::ms offlineDelayCopy;
+    types::ms deadDelayCopy;
+    {
+        std::shared_lock<std::shared_mutex> lock(m_sharedMutex);
+        startCopy = m_start;
+        outdatedDelayCopy = m_outdatedDelay;
+        offlineDelayCopy = m_offlineDelay;
+        deadDelayCopy = m_deadDelay;
+    }
+
+    auto elapsed = std::chrono::duration_cast<ms>(now - startCopy);
+    DeviceState state = m_state.load();
+
+    switch (state) {
+        case DeviceState::ONLINE:
+            if (elapsed >= outdatedDelayCopy) {
+                changeState(DeviceState::OUTDATED);
+            }
+            break;
+        case DeviceState::OUTDATED:
+            if (elapsed >= offlineDelayCopy) {
+                changeState(DeviceState::OFFLINE);
+            }
+            break;
+        case DeviceState::OFFLINE:
+            if (elapsed >= deadDelayCopy) {
+                changeState(DeviceState::DEAD);
+            }
+            break;
+        case DeviceState::DEAD:
+            // Wait until destructed
+            break;
+        default:
+            break;
+    }
+}
+
 void Device::adjustIdSequence(DeviceID id) {
-    if (m_idSequence <= id)
-        m_idSequence = id + 1;
+    DeviceID currentId = m_idSequence.load(std::memory_order_relaxed);
+    while (currentId <= id && !m_idSequence.compare_exchange_weak(
+                                  currentId, id + 1, std::memory_order_relaxed,
+                                  std::memory_order_relaxed)) {
+        // loop until successful
+    }
+}
+
+Device::Device(DeviceID id, DelayMs outdatedDelay, DelayMs offlineDelay,
+               DelayMs deadDelay, PinsQuantity maxPins, bool deleteAfterDeath)
+    : m_id(id),
+      m_outdatedDelay(outdatedDelay),
+      m_offlineDelay(offlineDelay),
+      m_deadDelay(deadDelay),
+      m_maxPins(maxPins),
+      m_deleteAfterDeath(deleteAfterDeath) {
+    generateToken();
 }
 
 // Device builder
@@ -456,18 +447,14 @@ Device::Builder& Device::Builder::setPinsTypeMap(PinsTypeMap&& pinsTypeMap) {
     return *this;
 }
 
-Device::Builder& Device::Builder::setDeleteAfterOffline(
-    bool deleteAfterOffline) {
-    m_deleteAfterOffline = deleteAfterOffline;
+Device::Builder& Device::Builder::setDeleteAfterDeath(bool deleteAfterDeath) {
+    m_deleteAfterDeath = deleteAfterDeath;
     return *this;
 }
 
 Device Device::Builder::build() {
-    Device device(m_outdatedDelay, m_offlineDelay, m_deadDelay, m_maxPins,
-                  m_deleteAfterOffline);
-    device.m_id = m_id;
-    if (!m_token.empty())
-        device.m_token = m_token;
+    Device device(m_id, m_outdatedDelay, m_offlineDelay, m_deadDelay, m_maxPins,
+                  m_deleteAfterDeath);
     device.m_state = m_state;
     device.m_intPins = std::move(m_intPins);
     device.m_doublePins = std::move(m_doublePins);
@@ -476,4 +463,4 @@ Device Device::Builder::build() {
     return device;
 }
 
-}  // namespace ioteye::device
+}  // namespace ioteye
