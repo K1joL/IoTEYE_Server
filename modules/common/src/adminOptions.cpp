@@ -74,10 +74,9 @@ const std::string& AdminOptions::getHistoryFile() const {
 }
 
 AdminOptions::AdminOptions(int argc, char** argv) : m_argc(argc), m_argv(argv) {
-    std::vector<std::string> options = {
-        "maxPins",         "outdated",   "offline",     "dead",
-        "historyInterval", "historyMax", "historyFile", "help"};
-        
+    std::vector<std::string> options = {"maxPins",         "outdated",   "offline",     "dead",
+                                        "historyInterval", "historyMax", "historyFile", "help"};
+
     po::options_description desc("Usage: IoTeyeServer [options]");
     desc.add_options()("help,h", "Produce help message")(
         "maxPins,p", po::value<uint16_t>(),
@@ -91,40 +90,27 @@ AdminOptions::AdminOptions(int argc, char** argv) : m_argc(argc), m_argv(argv) {
         "Time required to disable device monitoring (default: 10000)")(
         "historyInterval", po::value<uint32_t>(),
         "Pin history snapshot interval in ms (default: 2000)")(
-        "historyMax", po::value<uint32_t>(),
-        "Max lines in pin history file (default: 5000)")(
+        "historyMax", po::value<uint32_t>(), "Max lines in pin history file (default: 5000)")(
         "historyFile", po::value<std::string>(),
         "Pin history JSONL file path (default: pin_history.jsonl)");
     po::variables_map vm;
     po::store(po::parse_command_line(m_argc, m_argv, desc), vm);
     po::notify(vm);
     std::unordered_map<std::string, std::function<void()>> handlers = {
-        {options[MAXPINS], [&vm, opt = options[MAXPINS],
-                            this]() { handleMaxPins(vm[opt].as<uint16_t>()); }},
+        {options[MAXPINS],
+         [&vm, opt = options[MAXPINS], this]() { handleMaxPins(vm[opt].as<uint16_t>()); }},
         {options[OUTDATED],
-         [&vm, opt = options[OUTDATED], this]() {
-             handleOutdatedDelay(vm[opt].as<uint16_t>());
-         }},
+         [&vm, opt = options[OUTDATED], this]() { handleOutdatedDelay(vm[opt].as<uint16_t>()); }},
         {options[OFFLINE],
-         [&vm, opt = options[OFFLINE], this]() {
-             handleOfflineDelay(vm[opt].as<uint16_t>());
-         }},
+         [&vm, opt = options[OFFLINE], this]() { handleOfflineDelay(vm[opt].as<uint16_t>()); }},
         {options[DEADDELAY],
-         [&vm, opt = options[DEADDELAY], this]() {
-             handleDeadDelay(vm[opt].as<uint16_t>());
-         }},
-        {options[HISTORYINTERVAL],
-         [&vm, opt = options[HISTORYINTERVAL], this]() {
-             handleHistoryInterval(vm[opt].as<uint32_t>());
-         }},
+         [&vm, opt = options[DEADDELAY], this]() { handleDeadDelay(vm[opt].as<uint16_t>()); }},
+        {options[HISTORYINTERVAL], [&vm, opt = options[HISTORYINTERVAL],
+                                    this]() { handleHistoryInterval(vm[opt].as<uint32_t>()); }},
         {options[HISTORYMAX],
-         [&vm, opt = options[HISTORYMAX], this]() {
-             handleHistoryMax(vm[opt].as<uint32_t>());
-         }},
-        {options[HISTORYFILE],
-         [&vm, opt = options[HISTORYFILE], this]() {
-             handleHistoryFile(vm[opt].as<std::string>());
-         }},
+         [&vm, opt = options[HISTORYMAX], this]() { handleHistoryMax(vm[opt].as<uint32_t>()); }},
+        {options[HISTORYFILE], [&vm, opt = options[HISTORYFILE],
+                                this]() { handleHistoryFile(vm[opt].as<std::string>()); }},
         {options[HELP], [&desc]() { std::cout << desc << std::endl; }},
     };
 

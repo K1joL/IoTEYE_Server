@@ -47,8 +47,7 @@ namespace ioteye::utils {
  * between processors for load balancing.
  */
 class Processor {
-    using ObjectsMap =
-        std::unordered_map<types::ObjID, std::shared_ptr<utils::ManagedObject>>;
+    using ObjectsMap = std::unordered_map<types::ObjID, std::shared_ptr<utils::ManagedObject>>;
 
 public:
     /**
@@ -198,9 +197,8 @@ public:
      * @param minLoad Load percentage threshold to trigger scaling down.
      * @param sleepInterval Sleep interval passed to worker threads.
      */
-    ProcessorPool(size_t maxProc, size_t minProc, size_t procCapacity,
-                  types::loadt maxLoad, types::loadt minLoad,
-                  types::ms sleepInterval);
+    ProcessorPool(size_t maxProc, size_t minProc, size_t procCapacity, types::loadt maxLoad,
+                  types::loadt minLoad, types::ms sleepInterval);
 
     /**
      * @brief Move constructor.
@@ -278,8 +276,7 @@ public:
 protected:
     /** @brief Finds the processor containing the object without acquiring the
      * pool lock. */
-    std::shared_ptr<Processor> getProcessorContains_nolock(
-        types::ObjID id) const;
+    std::shared_ptr<Processor> getProcessorContains_nolock(types::ObjID id) const;
 
     /** @brief Evaluates pool load and scales processors up or down if
      * necessary. */
@@ -294,8 +291,7 @@ protected:
 
     /** @brief Migrates all objects from the specified processor to other active
      * processors. */
-    bool redistributeObjects_nolock(
-        const std::shared_ptr<Processor>& processor);
+    bool redistributeObjects_nolock(const std::shared_ptr<Processor>& processor);
 
     /** @brief Retrieves the least loaded processor that is currently ready. */
     std::shared_ptr<Processor> getLeastLoadProc_nolock() const;

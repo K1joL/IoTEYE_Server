@@ -72,8 +72,7 @@ private:
 
 class IFileManager {
 public:
-    explicit IFileManager(std::shared_ptr<FileHandler> fileHandler)
-        : m_fileHandler(fileHandler) {
+    explicit IFileManager(std::shared_ptr<FileHandler> fileHandler) : m_fileHandler(fileHandler) {
     }
     virtual ~IFileManager() = default;
     virtual bool saveFile(const types::DeviceMap& deviceMap) = 0;
@@ -85,8 +84,7 @@ protected:
 
 class DeviceFileManager : public IFileManager {
 public:
-    DeviceFileManager(std::shared_ptr<FileHandler> fileHandler)
-        : IFileManager(fileHandler) {
+    DeviceFileManager(std::shared_ptr<FileHandler> fileHandler) : IFileManager(fileHandler) {
     }
     bool saveFile(const types::DeviceMap& deviceMap) override;
     std::vector<types::DevicePtr> loadFile() override;

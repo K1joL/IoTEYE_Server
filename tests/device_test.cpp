@@ -1,5 +1,6 @@
-#include <gtest/gtest.h>
 #include "device.h"
+
+#include <gtest/gtest.h>
 using namespace ioteye;
 
 TEST(DeviceTest, DefaultConstructor) {
@@ -8,7 +9,7 @@ TEST(DeviceTest, DefaultConstructor) {
     EXPECT_EQ(device.getMaxPins(), 255);
 }
 
-TEST(DeviceTest, GetID){
+TEST(DeviceTest, GetID) {
     Device device2;
     Device device3;
     EXPECT_EQ(device2.getID(), 2);
@@ -26,15 +27,15 @@ TEST(DeviceTest, ChangeState) {
     EXPECT_EQ(device.getState(), Device::ONLINE);
 }
 
-TEST(DeviceTest, DelaysTest){
+TEST(DeviceTest, DelaysTest) {
     Device device;
     device.ping();
-    // std::cout << "MeowTest" << std::endl; 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
+    // std::cout << "MeowTest" << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     EXPECT_EQ(device.getState(), Device::ONLINE);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500)); 
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     EXPECT_EQ(device.getState(), Device::OUTDATED);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1500)); 
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
     EXPECT_EQ(device.getState(), Device::OFFLINE);
 }
 
@@ -44,14 +45,13 @@ TEST(DeviceTest, GenerateToken) {
     EXPECT_FALSE(device.getToken().empty());
 }
 
-
 TEST(DeviceTest, AddPin) {
     Device device;
     EXPECT_EQ(device.addPin(1, "int", "0"), 0);
     EXPECT_EQ(device.getIntPins().size(), 1);
 }
 
-TEST(DeviceTest, AddPinLimit){
+TEST(DeviceTest, AddPinLimit) {
     Device device(1000, 2000, 10);
     EXPECT_EQ(device.addPin(0, "int", "0"), 0);
     EXPECT_EQ(device.addPin(1, "int", "0"), 0);

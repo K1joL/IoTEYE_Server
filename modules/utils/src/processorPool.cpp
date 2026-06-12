@@ -5,8 +5,7 @@ using namespace ioteye::types;
 using ioteye::server::debug::LogLevel;
 using namespace ioteye::server;
 
-Processor::Processor(std::chrono::milliseconds sleepInterval)
-    : m_sleepInterval(sleepInterval) {
+Processor::Processor(std::chrono::milliseconds sleepInterval) : m_sleepInterval(sleepInterval) {
     m_thread = std::thread(&Processor::run, this);
 }
 
@@ -77,8 +76,7 @@ bool Processor::removeObject(ObjID id) {
 
 bool Processor::moveObject(std::shared_ptr<Processor> other, ObjID id) {
     std::unique_lock<std::shared_mutex> sourceLock(m_mutex, std::defer_lock);
-    std::unique_lock<std::shared_mutex> otherLock(other->m_mutex,
-                                                  std::defer_lock);
+    std::unique_lock<std::shared_mutex> otherLock(other->m_mutex, std::defer_lock);
     std::lock(sourceLock, otherLock);
     auto node = m_objects.extract(id);
     if (node)
@@ -128,9 +126,8 @@ std::vector<types::ObjID> Processor::getObjectIds() const {
     return ids;
 }
 
-ProcessorPool::ProcessorPool(size_t maxProc, size_t minProc,
-                             size_t procCapacity, loadt maxLoad, loadt minLoad,
-                             ms sleepInterval)
+ProcessorPool::ProcessorPool(size_t maxProc, size_t minProc, size_t procCapacity, loadt maxLoad,
+                             loadt minLoad, ms sleepInterval)
     : m_maxProc(maxProc),
       m_minProc(minProc),
       m_procCapacity(procCapacity),
@@ -207,7 +204,7 @@ bool ProcessorPool::registerObject(const std::shared_ptr<ManagedObject> obj) {
 }
 
 bool ProcessorPool::removeObject(std::shared_ptr<ManagedObject> obj) {
-    if(!obj)
+    if (!obj)
         return false;
     return removeObject(obj->getObjID());
 }
@@ -224,8 +221,7 @@ bool ProcessorPool::removeObject(ObjID objId) {
         if (foundProc->removeObject(objId)) {
             m_objCount.fetch_sub(1);
             if (!adjustProcessors_nolock())
-                debug::logln(LogLevel::ERROR,
-                             "Error while adjusting processor count");
+                debug::logln(LogLevel::ERROR, "Error while adjusting processor count");
             return true;
         }
     }
@@ -259,8 +255,7 @@ size_t ProcessorPool::getProcCount() const {
     return m_procCount.load();
 }
 
-std::shared_ptr<Processor> ProcessorPool::getProcessorContains_nolock(
-    ObjID id) const {
+std::shared_ptr<Processor> ProcessorPool::getProcessorContains_nolock(ObjID id) const {
     for (size_t i = 0; i < m_processors.size(); ++i)
         if (m_processors[i]->contains(id))
             return m_processors[i];
@@ -288,11 +283,9 @@ bool ProcessorPool::adjustProcessors_nolock() {
 bool ProcessorPool::addProcessor_nolock() {
     if (m_procCount.load() < m_maxProc) {
         try {
-            m_processors.push_back(
-                std::make_shared<Processor>(m_sleepInterval));
+            m_processors.push_back(std::make_shared<Processor>(m_sleepInterval));
         } catch (std::exception& e) {
-            debug::logln(LogLevel::ERROR,
-                         "Error while emplace processor: ", e.what());
+            debug::logln(LogLevel::ERROR, "Error while emplace processor: ", e.what());
             return false;
         }
         m_procCount.fetch_add(1);
@@ -324,8 +317,7 @@ bool ProcessorPool::removeProcessor_nolock() {
     return true;
 }
 
-bool ProcessorPool::redistributeObjects_nolock(
-    const std::shared_ptr<Processor>& processor) {
+bool ProcessorPool::redistributeObjects_nolock(const std::shared_ptr<Processor>& processor) {
     auto ids = processor->getObjectIds();
 
     for (auto id : ids) {
@@ -383,31 +375,26 @@ size_t ProcessorPool::getLeastLoadProcId_nolock() const {
     return leastLoadProcId;
 }
 
-std::vector<std::shared_ptr<Processor>> ProcessorPool::getProcessors_nolock()
-    const {
+std::vector<std::shared_ptr<Processor>> ProcessorPool::getProcessors_nolock() const {
     return m_processors;
 }
 
-ProcessorPool::Builder& ProcessorPool::Builder::setMinimumProcessors(
-    size_t minProc) {
+ProcessorPool::Builder& ProcessorPool::Builder::setMinimumProcessors(size_t minProc) {
     m_minProc = minProc;
     return *this;
 }
 
-ProcessorPool::Builder& ProcessorPool::Builder::setMaximumProcessors(
-    size_t maxProc) {
+ProcessorPool::Builder& ProcessorPool::Builder::setMaximumProcessors(size_t maxProc) {
     m_maxProc = maxProc;
     return *this;
 }
 
-ProcessorPool::Builder& ProcessorPool::Builder::setProcessorsCapacity(
-    size_t procCapacity) {
+ProcessorPool::Builder& ProcessorPool::Builder::setProcessorsCapacity(size_t procCapacity) {
     m_procCapacity = procCapacity;
     return *this;
 }
 
-ProcessorPool::Builder& ProcessorPool::Builder::setSleepInterval(
-    ms sleepInterval) {
+ProcessorPool::Builder& ProcessorPool::Builder::setSleepInterval(ms sleepInterval) {
     m_sleepInterval = sleepInterval;
     return *this;
 }
@@ -423,8 +410,7 @@ ProcessorPool::Builder& ProcessorPool::Builder::setMinimumLoad(loadt minLoad) {
 }
 
 ProcessorPool ProcessorPool::Builder::build() {
-    ProcessorPool pool(m_maxProc, m_minProc, m_procCapacity, m_maxLoad,
-                       m_minLoad, m_sleepInterval);
+    ProcessorPool pool(m_maxProc, m_minProc, m_procCapacity, m_maxLoad, m_minLoad, m_sleepInterval);
     return pool;
 }
 

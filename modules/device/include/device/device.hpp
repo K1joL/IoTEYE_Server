@@ -42,9 +42,8 @@ namespace ioteye {
 class Device : public utils::ManagedObject {
 public:
     Device();
-    Device(types::DelayMs outdatedDelay, types::DelayMs offlineDelay,
-           types::DelayMs deadDelay, types::PinsQuantity maxPins,
-           bool deleteAfterDeath);
+    Device(types::DelayMs outdatedDelay, types::DelayMs offlineDelay, types::DelayMs deadDelay,
+           types::PinsQuantity maxPins, bool deleteAfterDeath);
     Device(Device&& other) noexcept;
     Device& operator=(Device&& other) noexcept;
     std::string getToken() const;
@@ -55,12 +54,10 @@ public:
     bool isDeleteAfterDeath() const;
     ~Device();
 
-    void setDelays(types::DelayMs outdated, types::DelayMs offline,
-                   types::DelayMs dead);
+    void setDelays(types::DelayMs outdated, types::DelayMs offline, types::DelayMs dead);
     void setOnStateChange(std::function<void(types::DeviceState)> cb);
     // Virtual pins interactions
-    int addPin(types::PinId pinNumber, const std::string& dataType,
-               const std::string& defaultData);
+    int addPin(types::PinId pinNumber, const std::string& dataType, const std::string& defaultData);
     int changePin(types::PinId pinNumber, const std::string& data);
     int removePin(types::PinId pinNumber);
     std::string getPin(types::PinId pinNumber) const;
@@ -75,9 +72,8 @@ public:
 
 private:
     void adjustIdSequence(types::DeviceID id);
-    Device(types::DeviceID id, types::DelayMs outdatedDelay,
-           types::DelayMs offlineDelay, types::DelayMs deadDelay,
-           types::PinsQuantity maxPins, bool deleteAfterDeath);
+    Device(types::DeviceID id, types::DelayMs outdatedDelay, types::DelayMs offlineDelay,
+           types::DelayMs deadDelay, types::PinsQuantity maxPins, bool deleteAfterDeath);
     void generateToken();
 
 public:
@@ -94,8 +90,7 @@ public:
         Builder& setIntPin(types::PinId pinNumber, int value);
         Builder& setDoublePin(types::PinId pinNumber, double value);
         Builder& setStringPin(types::PinId pinNumber, const std::string& value);
-        Builder& setPinsTypePin(types::PinId pinNumber,
-                                types::ContainerID value);
+        Builder& setPinsTypePin(types::PinId pinNumber, types::ContainerID value);
         Builder& setIntPinMap(types::PinsIntMap&& intPinMap);
         Builder& setDoublePinMap(types::PinsDoubleMap&& doublePinMap);
         Builder& setStringPinMap(types::PinsStringMap&& stringPinMap);

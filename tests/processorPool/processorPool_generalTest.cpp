@@ -18,8 +18,7 @@ namespace test_utils {
 // Eliminates flakiness caused by arbitrary sleep_for() calls in CI
 // environments.
 template <typename Predicate>
-bool waitFor(Predicate pred,
-             std::chrono::milliseconds timeout = std::chrono::seconds(2)) {
+bool waitFor(Predicate pred, std::chrono::milliseconds timeout = std::chrono::seconds(2)) {
     auto start = std::chrono::steady_clock::now();
     while (!pred()) {
         if (std::chrono::steady_clock::now() - start > timeout) {
@@ -116,11 +115,9 @@ TEST_F(ProcessorTest, ProcessingLoopExecution) {
     m_proc->addObject(obj);
 
     // Replaces flaky std::this_thread::sleep_for(15ms)
-    bool processed =
-        test_utils::waitFor([&]() { return obj->getProcessCount() > 0; });
+    bool processed = test_utils::waitFor([&]() { return obj->getProcessCount() > 0; });
 
-    EXPECT_TRUE(processed)
-        << "Worker thread failed to process object within timeout";
+    EXPECT_TRUE(processed) << "Worker thread failed to process object within timeout";
 }
 
 TEST_F(ProcessorTest, ConcurrentAddRemove) {
@@ -335,33 +332,31 @@ TEST(ThreadSafetyTests, ProcessorThreadSafety) {
     std::atomic<int> adds(0), removes(0);
 
     for (int i = 0; i < THREAD_COUNT; ++i) {
-        threads.emplace_back(
-            [&processor, &objects, OPERATIONS_PER_THREAD, &adds, &removes]() {
-                std::random_device rd;
-                std::mt19937 gen(rd());
-                std::uniform_int_distribution<> opDist(0, 2);
-                std::uniform_int_distribution<> objDist(
-                    0, static_cast<int>(objects.size()) - 1);
+        threads.emplace_back([&processor, &objects, OPERATIONS_PER_THREAD, &adds, &removes]() {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> opDist(0, 2);
+            std::uniform_int_distribution<> objDist(0, static_cast<int>(objects.size()) - 1);
 
-                for (int j = 0; j < OPERATIONS_PER_THREAD; ++j) {
-                    int op = opDist(gen);
-                    auto obj = objects[objDist(gen)];
+            for (int j = 0; j < OPERATIONS_PER_THREAD; ++j) {
+                int op = opDist(gen);
+                auto obj = objects[objDist(gen)];
 
-                    switch (op) {
-                        case 0:
-                            if (processor.addObject(obj))
-                                adds.fetch_add(1, std::memory_order_relaxed);
-                            break;
-                        case 1:
-                            if (processor.removeObject(obj))
-                                removes.fetch_add(1, std::memory_order_relaxed);
-                            break;
-                        case 2:
-                            processor.contains(obj);
-                            break;
-                    }
+                switch (op) {
+                    case 0:
+                        if (processor.addObject(obj))
+                            adds.fetch_add(1, std::memory_order_relaxed);
+                        break;
+                    case 1:
+                        if (processor.removeObject(obj))
+                            removes.fetch_add(1, std::memory_order_relaxed);
+                        break;
+                    case 2:
+                        processor.contains(obj);
+                        break;
                 }
-            });
+            }
+        });
     }
 
     for (auto& t : threads) {
@@ -383,8 +378,7 @@ TEST(ThreadSafetyTests, ProcessorPoolThreadSafety) {
 
     // Arguments: maxProc, minProc, procCapacity, maxLoad, minLoad,
     // sleepInterval maxProc must be >= minProc
-    TestableProcessorPool pool(10, 2, 100, 80, 20,
-                               std::chrono::milliseconds(1));
+    TestableProcessorPool pool(10, 2, 100, 80, 20, std::chrono::milliseconds(1));
     std::vector<std::shared_ptr<TestManagedObject>> objects;
 
     for (int i = 0; i < OBJECT_COUNT; ++i) {
@@ -395,30 +389,28 @@ TEST(ThreadSafetyTests, ProcessorPoolThreadSafety) {
     std::atomic<int> adds(0), removes(0);
 
     for (int i = 0; i < THREAD_COUNT; ++i) {
-        threads.emplace_back(
-            [&pool, &objects, OPERATIONS_PER_THREAD, &adds, &removes]() {
-                std::random_device rd;
-                std::mt19937 gen(rd());
-                std::uniform_int_distribution<> opDist(0, 1);
-                std::uniform_int_distribution<> objDist(
-                    0, static_cast<int>(objects.size()) - 1);
+        threads.emplace_back([&pool, &objects, OPERATIONS_PER_THREAD, &adds, &removes]() {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> opDist(0, 1);
+            std::uniform_int_distribution<> objDist(0, static_cast<int>(objects.size()) - 1);
 
-                for (int j = 0; j < OPERATIONS_PER_THREAD; ++j) {
-                    int op = opDist(gen);
-                    auto obj = objects[objDist(gen)];
+            for (int j = 0; j < OPERATIONS_PER_THREAD; ++j) {
+                int op = opDist(gen);
+                auto obj = objects[objDist(gen)];
 
-                    switch (op) {
-                        case 0:
-                            if (pool.registerObject(obj))
-                                adds.fetch_add(1, std::memory_order_relaxed);
-                            break;
-                        case 1:
-                            if (pool.removeObject(obj))
-                                removes.fetch_add(1, std::memory_order_relaxed);
-                            break;
-                    }
+                switch (op) {
+                    case 0:
+                        if (pool.registerObject(obj))
+                            adds.fetch_add(1, std::memory_order_relaxed);
+                        break;
+                    case 1:
+                        if (pool.removeObject(obj))
+                            removes.fetch_add(1, std::memory_order_relaxed);
+                        break;
                 }
-            });
+            }
+        });
     }
 
     for (auto& t : threads) {
@@ -454,8 +446,7 @@ TEST(ThreadSafetyTests, ProcessorPoolUnderLoad) {
         EXPECT_TRUE(pool.registerObject(obj));
     }
 
-    auto end_time = std::chrono::steady_clock::now() +
-                    std::chrono::milliseconds(TEST_DURATION_MS);
+    auto end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(TEST_DURATION_MS);
     int counter = 0;
 
     while (std::chrono::steady_clock::now() < end_time) {

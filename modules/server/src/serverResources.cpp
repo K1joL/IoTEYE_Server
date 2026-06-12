@@ -50,36 +50,33 @@ std::shared_ptr<HttpResponse> PinsResource::renderPOST(const HttpRequest& req) {
     if (!result.has_value()) {
         switch (result.error()) {
             case HttpStatusCode::BAD_REQUEST:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Device doesn`t exist!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Device doesn`t exist!");
             case HttpStatusCode::UNAUTHORIZED:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::UNAUTHORIZED, "Auth failure!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::UNAUTHORIZED,
+                                                      "Auth failure!");
             default:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal auth error");
+                return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                                      "Internal auth error");
         }
     }
 
     auto& device = result.value();
     if (!device)
-        return std::make_shared<HttpResponse>(
-            HttpStatusCode::INTERNAL_SERVER_ERROR, "Something went wrong");
+        return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                              "Something went wrong");
 
     switch (ioteye::GetCommandCode(cmd)) {
         case ioteye::CREATE_PIN:
 
             if ((device->addPin(pinNumber, dataType, value)) == 0)
-                return std::make_shared<HttpResponse>(HttpStatusCode::CREATED,
-                                                      "Pin created!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::CREATED, "Pin created!");
             else
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Pin already exists!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Pin already exists!");
             break;
         default:
-            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
-                                                  "Wrong command!");
+            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST, "Wrong command!");
     }
 }
 
@@ -96,35 +93,32 @@ std::shared_ptr<HttpResponse> PinsResource::renderGET(const HttpRequest& req) {
     if (!result.has_value()) {
         switch (result.error()) {
             case HttpStatusCode::BAD_REQUEST:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Device doesn`t exist!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Device doesn`t exist!");
             case HttpStatusCode::UNAUTHORIZED:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::UNAUTHORIZED, "Auth failure!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::UNAUTHORIZED,
+                                                      "Auth failure!");
             default:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal auth error");
+                return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                                      "Internal auth error");
         }
     }
 
     auto& device = result.value();
     if (!device)
-        return std::make_shared<HttpResponse>(
-            HttpStatusCode::INTERNAL_SERVER_ERROR, "Something went wrong");
+        return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                              "Something went wrong");
 
     switch (ioteye::GetCommandCode(cmd)) {
         case ioteye::GET_PIN:
             if ((value = device->getPin(pinNumber)) != "")
-                return std::make_shared<HttpResponse>(HttpStatusCode::OK,
-                                                      "PinValue=" + value);
+                return std::make_shared<HttpResponse>(HttpStatusCode::OK, "PinValue=" + value);
             else
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Pin does not exists!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Pin does not exists!");
             break;
         default:
-            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
-                                                  "Wrong command!");
+            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST, "Wrong command!");
     }
 }
 
@@ -142,41 +136,37 @@ std::shared_ptr<HttpResponse> PinsResource::renderPUT(const HttpRequest& req) {
     if (!result.has_value()) {
         switch (result.error()) {
             case HttpStatusCode::BAD_REQUEST:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Device doesn`t exist!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Device doesn`t exist!");
             case HttpStatusCode::UNAUTHORIZED:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::UNAUTHORIZED, "Auth failure!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::UNAUTHORIZED,
+                                                      "Auth failure!");
             default:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal auth error");
+                return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                                      "Internal auth error");
         }
     }
 
     auto& device = result.value();
     if (!device)
-        return std::make_shared<HttpResponse>(
-            HttpStatusCode::INTERNAL_SERVER_ERROR, "Something went wrong");
+        return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                              "Something went wrong");
 
     switch (ioteye::GetCommandCode(cmd)) {
         case ioteye::UPDATE_PIN:
             if ((device->changePin(pinNumber, value)) == 0) {
                 m_historyLogger->record(*device);
-                return std::make_shared<HttpResponse>(HttpStatusCode::OK,
-                                                      "Pin changed");
+                return std::make_shared<HttpResponse>(HttpStatusCode::OK, "Pin changed");
             } else
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Pin does not exists!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Pin does not exists!");
             break;
         default:
-            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
-                                                  "Wrong command!");
+            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST, "Wrong command!");
     }
 }
 
-std::shared_ptr<HttpResponse> PinsResource::renderDELETE(
-    const HttpRequest& req) {
+std::shared_ptr<HttpResponse> PinsResource::renderDELETE(const HttpRequest& req) {
     logStatus("PINS DELETE\n", req.getArgs());
 
     // Getting request arguments
@@ -189,40 +179,36 @@ std::shared_ptr<HttpResponse> PinsResource::renderDELETE(
     if (!result.has_value()) {
         switch (result.error()) {
             case HttpStatusCode::BAD_REQUEST:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Device doesn`t exist!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Device doesn`t exist!");
             case HttpStatusCode::UNAUTHORIZED:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::UNAUTHORIZED, "Auth failure!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::UNAUTHORIZED,
+                                                      "Auth failure!");
             default:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal auth error");
+                return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                                      "Internal auth error");
         }
     }
 
     auto& device = result.value();
     if (!device)
-        return std::make_shared<HttpResponse>(
-            HttpStatusCode::INTERNAL_SERVER_ERROR, "Something went wrong");
+        return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                              "Something went wrong");
 
     switch (ioteye::GetCommandCode(cmd)) {
         case ioteye::DELETE_PIN:
             if ((device->removePin(pinNumber)) == 0)
-                return std::make_shared<HttpResponse>(HttpStatusCode::OK,
-                                                      "Pin deleted");
+                return std::make_shared<HttpResponse>(HttpStatusCode::OK, "Pin deleted");
             else
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Pin does not exists!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Pin does not exists!");
             break;
         default:
-            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
-                                                  "Wrong command!");
+            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST, "Wrong command!");
     }
 }
 
-std::shared_ptr<HttpResponse> DeviceResource::renderPOST(
-    const HttpRequest& req) {
+std::shared_ptr<HttpResponse> DeviceResource::renderPOST(const HttpRequest& req) {
     logStatus("DEVICE POST\n Request Arguments:\n", req.getArgs());
 
     std::string deviceType = req.getHeaderValue(HEADER_DEVICE_TYPE);
@@ -244,9 +230,8 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPOST(
 
             auto insertedDevice = m_deviceManager->createDevice(params);
             if (!insertedDevice) {
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::INTERNAL_SERVER_ERROR,
-                    "Device was not inserted to map!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                                      "Device was not inserted to map!");
             }
             logStatus("Device was inserted!");
 
@@ -261,18 +246,15 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPOST(
             logStatus("DeviceMap Size: ", m_deviceManager->getSize());
 
             payload += insertedDevice->getToken();
-            return std::make_shared<HttpResponse>(HttpStatusCode::CREATED,
-                                                  payload);
+            return std::make_shared<HttpResponse>(HttpStatusCode::CREATED, payload);
             break;
         }
         default:
-            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
-                                                  "Wrong command!");
+            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST, "Wrong command!");
     }
 }
 
-std::shared_ptr<HttpResponse> DeviceResource::renderGET(
-    const HttpRequest& req) {
+std::shared_ptr<HttpResponse> DeviceResource::renderGET(const HttpRequest& req) {
     logStatus("DEVICE GET\n", req.getArgs());
 
     // Getting request arguments
@@ -285,38 +267,34 @@ std::shared_ptr<HttpResponse> DeviceResource::renderGET(
     if (!result.has_value()) {
         switch (result.error()) {
             case HttpStatusCode::BAD_REQUEST:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Device doesn`t exist!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Device doesn`t exist!");
             case HttpStatusCode::UNAUTHORIZED:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::UNAUTHORIZED, "Auth failure!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::UNAUTHORIZED,
+                                                      "Auth failure!");
             default:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal auth error");
+                return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                                      "Internal auth error");
         }
     }
 
     auto& device = result.value();
     if (!device)
-        return std::make_shared<HttpResponse>(
-            HttpStatusCode::INTERNAL_SERVER_ERROR, "Something went wrong");
+        return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                              "Something went wrong");
 
     switch (ioteye::GetCommandCode(cmd)) {
         case ioteye::DEVICE_STATUS:
             deviceStatus = device->getState();
-            return std::make_shared<HttpResponse>(
-                HttpStatusCode::OK,
-                "devStatus=" + std::to_string(deviceStatus));
+            return std::make_shared<HttpResponse>(HttpStatusCode::OK,
+                                                  "devStatus=" + std::to_string(deviceStatus));
             break;
         default:
-            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
-                                                  "Wrong command!");
+            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST, "Wrong command!");
     }
 }
 
-std::shared_ptr<HttpResponse> DeviceResource::renderPUT(
-    const HttpRequest& req) {
+std::shared_ptr<HttpResponse> DeviceResource::renderPUT(const HttpRequest& req) {
     logStatus("DEVICE PUT\n", req.getArgs());
 
     // Getting request arguments
@@ -328,37 +306,33 @@ std::shared_ptr<HttpResponse> DeviceResource::renderPUT(
     if (!result.has_value()) {
         switch (result.error()) {
             case HttpStatusCode::BAD_REQUEST:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Device doesn`t exist!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Device doesn`t exist!");
             case HttpStatusCode::UNAUTHORIZED:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::UNAUTHORIZED, "Auth failure!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::UNAUTHORIZED,
+                                                      "Auth failure!");
             default:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal auth error");
+                return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                                      "Internal auth error");
         }
     }
 
     auto& device = result.value();
     if (!device)
-        return std::make_shared<HttpResponse>(
-            HttpStatusCode::INTERNAL_SERVER_ERROR, "Something went wrong");
+        return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                              "Something went wrong");
 
     switch (ioteye::GetCommandCode(cmd)) {
         case ioteye::DEVICE_STATUS_UPDATE:
             device->ping();
-            return std::make_shared<HttpResponse>(HttpStatusCode::OK,
-                                                  "Device status updated!");
+            return std::make_shared<HttpResponse>(HttpStatusCode::OK, "Device status updated!");
             break;
         default:
-            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
-                                                  "Wrong command!");
+            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST, "Wrong command!");
     }
 }
 
-std::shared_ptr<HttpResponse> DeviceResource::renderDELETE(
-    const HttpRequest& req) {
+std::shared_ptr<HttpResponse> DeviceResource::renderDELETE(const HttpRequest& req) {
     logStatus("DEVICE DELETE\n", req.getArgs());
 
     // Getting request arguments
@@ -370,32 +344,29 @@ std::shared_ptr<HttpResponse> DeviceResource::renderDELETE(
     if (!result.has_value()) {
         switch (result.error()) {
             case HttpStatusCode::BAD_REQUEST:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Device doesn`t exist!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Device doesn`t exist!");
             case HttpStatusCode::UNAUTHORIZED:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::UNAUTHORIZED, "Auth failure!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::UNAUTHORIZED,
+                                                      "Auth failure!");
             default:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal auth error");
+                return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                                      "Internal auth error");
         }
     }
 
     auto& device = result.value();
     if (!device)
-        return std::make_shared<HttpResponse>(
-            HttpStatusCode::INTERNAL_SERVER_ERROR, "Something went wrong");
+        return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                              "Something went wrong");
 
     switch (ioteye::GetCommandCode(cmd)) {
         case ioteye::DELETE_DEVICE:
             m_deviceManager->deleteDevice(device);
-            return std::make_shared<HttpResponse>(HttpStatusCode::OK,
-                                                  "Device deleted!");
+            return std::make_shared<HttpResponse>(HttpStatusCode::OK, "Device deleted!");
             break;
         default:
-            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
-                                                  "Wrong command!");
+            return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST, "Wrong command!");
     }
 }
 
@@ -407,13 +378,11 @@ std::shared_ptr<HttpResponse> HistoryResource::renderPUT(const HttpRequest&) {
     return createMethodNotAllowed("GET");
 }
 
-std::shared_ptr<HttpResponse> HistoryResource::renderDELETE(
-    const HttpRequest&) {
+std::shared_ptr<HttpResponse> HistoryResource::renderDELETE(const HttpRequest&) {
     return createMethodNotAllowed("GET");
 }
 
-std::shared_ptr<HttpResponse> HistoryResource::renderGET(
-    const HttpRequest& req) {
+std::shared_ptr<HttpResponse> HistoryResource::renderGET(const HttpRequest& req) {
     logStatus("HISTORY GET\n", req.getArgs());
 
     std::string token{req.getArg("token")};
@@ -425,22 +394,21 @@ std::shared_ptr<HttpResponse> HistoryResource::renderGET(
     if (!result.has_value()) {
         switch (result.error()) {
             case HttpStatusCode::BAD_REQUEST:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::BAD_REQUEST, "Device doesn`t exist!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::BAD_REQUEST,
+                                                      "Device doesn`t exist!");
             case HttpStatusCode::UNAUTHORIZED:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::UNAUTHORIZED, "Auth failure!");
+                return std::make_shared<HttpResponse>(HttpStatusCode::UNAUTHORIZED,
+                                                      "Auth failure!");
             default:
-                return std::make_shared<HttpResponse>(
-                    HttpStatusCode::INTERNAL_SERVER_ERROR,
-                    "Internal auth error");
+                return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                                      "Internal auth error");
         }
     }
 
     auto& device = result.value();
     if (!device)
-        return std::make_shared<HttpResponse>(
-            HttpStatusCode::INTERNAL_SERVER_ERROR, "Something went wrong");
+        return std::make_shared<HttpResponse>(HttpStatusCode::INTERNAL_SERVER_ERROR,
+                                              "Something went wrong");
 
     int64_t since = 0;
     int64_t until = std::numeric_limits<int64_t>::max();
@@ -457,8 +425,7 @@ std::shared_ptr<HttpResponse> HistoryResource::renderGET(
                                               "Invalid history parameters");
     }
 
-    const std::string body =
-        m_historyLogger->query(device->getDeviceID(), since, until, limit);
+    const std::string body = m_historyLogger->query(device->getDeviceID(), since, until, limit);
     return std::make_shared<HttpResponse>(HttpStatusCode::OK, body);
 }
 
@@ -476,8 +443,7 @@ std::expected<types::DevicePtr, HttpStatusCode> ServerResource::authCheck(
     }
 }
 
-ServerResource::ServerResource(DeviceManagerPtr deviceManager,
-                               HistoryLoggerPtr historyLogger)
+ServerResource::ServerResource(DeviceManagerPtr deviceManager, HistoryLoggerPtr historyLogger)
     : m_deviceManager(deviceManager), m_historyLogger(historyLogger) {
 }
 

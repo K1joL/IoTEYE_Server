@@ -11,8 +11,7 @@ using json = nlohmann::json;
 using namespace ioteye::types;
 using namespace ioteye::server::debug;
 
-PinHistoryLogger::PinHistoryLogger(PinHistoryConfig config)
-    : m_config(std::move(config)) {
+PinHistoryLogger::PinHistoryLogger(PinHistoryConfig config) : m_config(std::move(config)) {
 }
 
 int64_t PinHistoryLogger::nowMs() {
@@ -49,8 +48,7 @@ void PinHistoryLogger::appendSnapshot(const ioteye::Device& device) {
 
     std::ofstream out(m_config.filePath, std::ios::app);
     if (!out.is_open()) {
-        logln(LogLevel::ERROR, "PinHistoryLogger: cannot open ",
-              m_config.filePath);
+        logln(LogLevel::ERROR, "PinHistoryLogger: cannot open ", m_config.filePath);
         return;
     }
     out << row.dump() << '\n';
@@ -97,8 +95,8 @@ void PinHistoryLogger::trimDeviceIfNeeded(types::DeviceID deviceId) {
         out << l << '\n';
 }
 
-std::string PinHistoryLogger::query(types::DeviceID deviceId, int64_t since,
-                                    int64_t until, uint32_t limit) const {
+std::string PinHistoryLogger::query(types::DeviceID deviceId, int64_t since, int64_t until,
+                                    uint32_t limit) const {
     std::lock_guard<std::mutex> lock(m_mutex);
     const uint32_t cap = limit > 0 ? limit : 1000;
 
@@ -121,16 +119,14 @@ std::string PinHistoryLogger::query(types::DeviceID deviceId, int64_t since,
             const int64_t ts = row.value("ts", int64_t{0});
             if (ts < since || ts > until)
                 continue;
-            matched.push_back(
-                {{"ts", ts}, {"pins", row.value("pins", json::object())}});
+            matched.push_back({{"ts", ts}, {"pins", row.value("pins", json::object())}});
         } catch (...) {
             continue;
         }
     }
 
     if (matched.size() > cap)
-        matched.erase(matched.begin(),
-                      matched.begin() + (matched.size() - cap));
+        matched.erase(matched.begin(), matched.begin() + (matched.size() - cap));
 
     for (auto& s : matched)
         result.push_back(std::move(s));

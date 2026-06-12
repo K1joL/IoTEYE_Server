@@ -13,8 +13,8 @@ public:
     virtual ~IPinHistoryLogger() = default;
 
     virtual void record(const ioteye::Device& device) = 0;
-    virtual std::string query(types::DeviceID deviceId, int64_t since,
-                              int64_t until, uint32_t limit) const = 0;
+    virtual std::string query(types::DeviceID deviceId, int64_t since, int64_t until,
+                              uint32_t limit) const = 0;
 };
 
 }  // namespace ioteye::persistence

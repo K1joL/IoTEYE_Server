@@ -16,12 +16,12 @@ using namespace ioteye;
 #define DEVID "0"
 
 std::string makeTestDevice() {
-    auto newDevice = std::make_shared<Device>(
-        Device::Builder()
-            .setIntPin(std::stoi(PINNUM), std::stoi(PINDEFVAL))
-            .setID(std::stoi(DEVID))
-            .setMaxPins(5)
-            .build());
+    auto newDevice =
+        std::make_shared<Device>(Device::Builder()
+                                     .setIntPin(std::stoi(PINNUM), std::stoi(PINDEFVAL))
+                                     .setID(std::stoi(DEVID))
+                                     .setMaxPins(5)
+                                     .build());
     newDevice->generateToken();
     s_idDeviceMap.emplace(newDevice->getID(), newDevice);
     return newDevice->getToken();
@@ -30,8 +30,8 @@ std::string makeTestDevice() {
 class PinsResourcesTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_resource = std::make_unique<HttpResource>(
-            std::make_shared<PinsResource>(), std::string("/test"));
+        m_resource =
+            std::make_unique<HttpResource>(std::make_shared<PinsResource>(), std::string("/test"));
         m_devtoken = makeTestDevice();
     }
 
@@ -45,8 +45,8 @@ protected:
 class DeviceResourcesTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_resource = std::make_unique<HttpResource>(
-            std::make_shared<DeviceResource>(), std::string("/test"));
+        m_resource = std::make_unique<HttpResource>(std::make_shared<DeviceResource>(),
+                                                    std::string("/test"));
         m_devtoken = makeTestDevice();
     }
 

@@ -15,8 +15,7 @@ public:
         m_cv.notify_one();
     }
 
-    bool pop(T& item, std::chrono::milliseconds timeout =
-                          std::chrono::milliseconds(100)) {
+    bool pop(T& item, std::chrono::milliseconds timeout = std::chrono::milliseconds(100)) {
         std::unique_lock<std::mutex> lock(m_mutex);
         if (!m_cv.wait_for(lock, timeout, [this] { return !m_queue.empty(); }))
             return false;

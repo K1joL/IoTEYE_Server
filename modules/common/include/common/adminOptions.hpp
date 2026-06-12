@@ -53,7 +53,7 @@ public:
 
 protected:
     AdminOptions(int argc, char** argv);
-    ~AdminOptions() {};
+    ~AdminOptions(){};
 
 private:
     void handleMaxPins(uint16_t value);

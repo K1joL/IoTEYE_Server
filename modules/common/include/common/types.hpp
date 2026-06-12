@@ -67,13 +67,7 @@ struct DeviceParams {
     bool deleteAfterDeath = false;
 };
 
-enum DeviceState : std::uint8_t {
-    ONLINE = 0,
-    OUTDATED = 1,
-    OFFLINE = 2,
-    DEAD = 3,
-    MAX_STATE
-};
+enum DeviceState : std::uint8_t { ONLINE = 0, OUTDATED = 1, OFFLINE = 2, DEAD = 3, MAX_STATE };
 
 inline const char* toString(DeviceState s) {
     switch (s) {

@@ -16,7 +16,6 @@
 
 #include "device.h"
 
-
 std::unique_ptr<AdminOptions> OPTIONS = std::make_unique<AdminOptions>();
 using json = nlohmann::json;
 
@@ -41,10 +40,9 @@ protected:
         }
 #endif
 
-        fileHandler = std::make_shared<FileHandler>(
-            templateName, std::ios::out | std::ios::in | std::ios::trunc);
-        deviceFileManager =
-            std::make_unique<DeviceFileManager>(fileHandler, devicesMap);
+        fileHandler = std::make_shared<FileHandler>(templateName,
+                                                    std::ios::out | std::ios::in | std::ios::trunc);
+        deviceFileManager = std::make_unique<DeviceFileManager>(fileHandler, devicesMap);
     }
 
     void TearDown() override {

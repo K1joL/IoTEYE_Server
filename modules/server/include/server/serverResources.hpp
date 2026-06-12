@@ -51,16 +51,14 @@ using HistoryLoggerPtr = std::shared_ptr<persistence::IPinHistoryLogger>;
 
 class ServerResource : public HttpResourceHandler {
 public:
-    ServerResource(DeviceManagerPtr deviceManager,
-                   HistoryLoggerPtr historyLogger);
+    ServerResource(DeviceManagerPtr deviceManager, HistoryLoggerPtr historyLogger);
 
 protected:
     /// @brief Token authentication. Checks whether a device with the specified
     /// token exists.
     /// @param token The device token with which to authenticate.
     /// @return DevicePtr on success, HttpStatusCode error on failure.
-    std::expected<types::DevicePtr, HttpStatusCode> authCheck(
-        const std::string& token);
+    std::expected<types::DevicePtr, HttpStatusCode> authCheck(const std::string& token);
 
 protected:
     DeviceManagerPtr m_deviceManager;

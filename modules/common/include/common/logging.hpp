@@ -24,10 +24,10 @@
 #ifndef IOTEYE_COMMON_IOTEYE_LOGGING_HPP
 #define IOTEYE_COMMON_IOTEYE_LOGGING_HPP
 
+#include <iostream>
 #include <mutex>
 #include <string>
 #include <unordered_map>
-#include <iostream>
 #ifdef ENABLE_LOGGING
 #include <chrono>
 #include <sstream>
@@ -53,8 +53,7 @@ inline std::string getLevelString(LogLevel level) {
 
 // << operator overload specifically for std::unordered_map
 template <typename K, typename V>
-std::ostream& operator<<(std::ostream& os,
-                         const std::unordered_map<K, V>& map) {
+std::ostream& operator<<(std::ostream& os, const std::unordered_map<K, V>& map) {
     os << "{";
     bool first = true;
     for (const auto& pair : map) {
@@ -76,8 +75,7 @@ inline std::chrono::duration<double> getTimestamp() {
 }
 
 inline void printPrefix(LogLevel level) {
-    std::cout << '[' << getTimestamp().count() << "] [" << getLevelString(level)
-              << "] ";
+    std::cout << '[' << getTimestamp().count() << "] [" << getLevelString(level) << "] ";
 }
 
 template <typename... Args>

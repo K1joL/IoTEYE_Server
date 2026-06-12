@@ -3,15 +3,14 @@
 namespace ioteye::utils {
 
 TimerScheduler::TimerScheduler(TimerSchedulerParams p) {
-    m_pool = std::make_shared<ProcessorPool>(
-        ProcessorPool::Builder()
-            .setMaximumProcessors(p.maxThreads)
-            .setMinimumProcessors(p.minThreads)
-            .setProcessorsCapacity(p.threadCapacity)
-            .setMaximumLoad(p.maxLoad)
-            .setMinimumLoad(p.minLoad)
-            .setSleepInterval(p.sleepInterval)
-            .build());
+    m_pool = std::make_shared<ProcessorPool>(ProcessorPool::Builder()
+                                                 .setMaximumProcessors(p.maxThreads)
+                                                 .setMinimumProcessors(p.minThreads)
+                                                 .setProcessorsCapacity(p.threadCapacity)
+                                                 .setMaximumLoad(p.maxLoad)
+                                                 .setMinimumLoad(p.minLoad)
+                                                 .setSleepInterval(p.sleepInterval)
+                                                 .build());
 }
 
 bool TimerScheduler::registerObject(std::shared_ptr<ManagedObject> object) {

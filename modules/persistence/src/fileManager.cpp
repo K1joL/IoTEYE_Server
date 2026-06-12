@@ -88,27 +88,26 @@ std::vector<DevicePtr> DeviceFileManager::loadFile() {
             stringPins[pin[0]] = pin[1];
         }
 
-        DevicePtr newDevice = std::make_shared<Device>(
-            Device::Builder()
-                .setID(device["id"])
-                .setToken(device["token"])
-                .setMaxPins(device["maxPins"])
-                .setIntPinMap(std::move(intPins))
-                .setDoublePinMap(std::move(doublePins))
-                .setStringPinMap(std::move(stringPins))
-                .setPinsTypeMap(std::move(pinsType))
-                .setOfflineDelay(ao::getOptions().getOfflineDelay())
-                .setOutdatedDelay(ao::getOptions().getOutdatedDelay())
-                .build());
+        DevicePtr newDevice =
+            std::make_shared<Device>(Device::Builder()
+                                         .setID(device["id"])
+                                         .setToken(device["token"])
+                                         .setMaxPins(device["maxPins"])
+                                         .setIntPinMap(std::move(intPins))
+                                         .setDoublePinMap(std::move(doublePins))
+                                         .setStringPinMap(std::move(stringPins))
+                                         .setPinsTypeMap(std::move(pinsType))
+                                         .setOfflineDelay(ao::getOptions().getOfflineDelay())
+                                         .setOutdatedDelay(ao::getOptions().getOutdatedDelay())
+                                         .build());
         // Initialize other relevant data if necessary
         devicesToLoad.push_back(newDevice);
         // server::debug::log(newDevice->getPinsTypes().size());
         // server::debug::log(newDevice->getIntPins().size());
         // server::debug::log(newDevice->getStringPins().size());
         // server::debug::log(newDevice->getDoublePins().size());
-        ioteye::server::debug::logStatus(
-            "Device loading ", devicesToLoad.size(), '/', j.size(),
-            newDevice ? " Success" : "Failed");
+        ioteye::server::debug::logStatus("Device loading ", devicesToLoad.size(), '/', j.size(),
+                                         newDevice ? " Success" : "Failed");
     }
     return devicesToLoad;
 }
@@ -152,8 +151,7 @@ bool FileHandler::readLine(std::string& line) {
             m_currentReadPos = 0;
             return false;  // EOF reached
         } else {
-            std::cerr << "Error reading line in readLineStaticPosition."
-                      << std::endl;
+            std::cerr << "Error reading line in readLineStaticPosition." << std::endl;
             return false;  // Error occurred
         }
     }
@@ -186,8 +184,7 @@ void FileHandler::closeFile() {
         m_fileStream.close();
 }
 
-void FileHandler::openFile(const std::string& filename,
-                           std::ios_base::openmode mode) {
+void FileHandler::openFile(const std::string& filename, std::ios_base::openmode mode) {
     if (filename.empty())
         throw std::invalid_argument("File path cannot be empty!");
     m_fileStream.open(m_filename, mode);
@@ -206,8 +203,7 @@ void FileHandler::fileWorker() {
         {
             std::unique_lock<std::mutex> lock(m_queueMutex);
             // Wait for a new task or shutdown signal
-            m_queueCondition.wait(
-                lock, [this] { return !m_queue.empty() || m_shutdown; });
+            m_queueCondition.wait(lock, [this] { return !m_queue.empty() || m_shutdown; });
 
             // If shutdown is requested and the queue is empty, exit the loop
             if (m_shutdown && m_queue.empty())
@@ -225,8 +221,7 @@ void FileHandler::fileWorker() {
             std::lock_guard<std::mutex> lock(m_fileMutex);
             m_fileStream << line;
             if (!m_fileStream.good()) {
-                std::cerr << "Failed to write to file: " << m_filename
-                          << std::endl;
+                std::cerr << "Failed to write to file: " << m_filename << std::endl;
             }
         }
     }

@@ -30,14 +30,12 @@ namespace ioteye {
 using namespace server::debug;
 using namespace types;
 
-DeviceManager::DeviceManager(std::shared_ptr<utils::ProcessorPool> pool)
-    : m_pool(pool) {
+DeviceManager::DeviceManager(std::shared_ptr<utils::ProcessorPool> pool) : m_pool(pool) {
 }
 
 DevicePtr DeviceManager::createDevice(const DeviceParams& params) {
-    auto dev = std::make_shared<Device>(
-        params.outdatedDelay, params.offlineDelay, params.deadDelay,
-        params.maxPins, params.deleteAfterDeath);
+    auto dev = std::make_shared<Device>(params.outdatedDelay, params.offlineDelay, params.deadDelay,
+                                        params.maxPins, params.deleteAfterDeath);
 
     return createDevice(dev);
 }
@@ -49,17 +47,14 @@ types::DevicePtr DeviceManager::createDevice(types::DevicePtr newDevice) {
     }
     DeviceID id = newDevice->getDeviceID();
     // Set DEAD callback
-    newDevice->setOnStateChange([this, id](DeviceState state) {
-        this->onDeviceStateChange(id, state);
-    });
+    newDevice->setOnStateChange(
+        [this, id](DeviceState state) { this->onDeviceStateChange(id, state); });
 
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         auto [it, inserted] = m_devices.emplace(id, newDevice);
         if (!inserted) {
-            logStatus(
-                "[DeviceManager] Device insert failed, id already exists: ",
-                id);
+            logStatus("[DeviceManager] Device insert failed, id already exists: ", id);
             return nullptr;
         }
     }
@@ -141,8 +136,7 @@ void DeviceManager::onDeviceStateChange(DeviceID id, DeviceState state) {
 DeviceID DeviceManager::getDeviceIdByToken(Token token) const {
     try {
         const auto decodedToken = jwt::decode(token);
-        uint64_t devID =
-            std::stoul(decodedToken.get_payload_claim("deviceID").as_string());
+        uint64_t devID = std::stoul(decodedToken.get_payload_claim("deviceID").as_string());
         return devID;
     } catch (const std::exception& e) {
         logStatus("[DeviceManager] JWT exception thrown: ", e.what());
