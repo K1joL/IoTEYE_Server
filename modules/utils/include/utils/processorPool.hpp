@@ -39,32 +39,128 @@
 
 namespace ioteye::utils {
 
+/**
+ * @class Processor
+ * @brief Dedicated worker thread for processing a subset of ManagedObjects.
+ * @details Maintains a thread-safe collection of objects and continuously
+ * invokes their processing logic. Supports dynamic object migration
+ * between processors for load balancing.
+ */
 class Processor {
     using ObjectsMap =
         std::unordered_map<types::ObjID, std::shared_ptr<utils::ManagedObject>>;
 
 public:
+    /**
+     * @brief Constructs a Processor and launches the worker thread.
+     * @param sleepInterval Sleep duration between processing iterations.
+     */
     Processor(std::chrono::milliseconds sleepInterval);
+
+    /**
+     * @brief Destructor. Stops the worker thread and blocks until it joins.
+     */
     ~Processor();
+
+    /**
+     * @brief Move constructor. Transfers state and thread ownership.
+     */
     Processor(Processor&& other) noexcept;
+
+    /**
+     * @brief Move assignment operator. Transfers state and thread ownership.
+     */
     Processor& operator=(Processor&& other) noexcept;
 
     Processor(const Processor&) = delete;
     Processor& operator=(const Processor&) = delete;
 
+    /**
+     * @brief Main execution loop for the worker thread.
+     */
     void run();
+
+    /**
+     * @brief Registers a new object to be processed by this worker.
+     * @param obj Shared pointer to the managed object.
+     * @return True if the object was successfully added, false if it already
+     * exists.
+     */
     bool addObject(std::shared_ptr<utils::ManagedObject> obj);
+
+    /**
+     * @brief Removes an object from the processing queue.
+     * @param obj Shared pointer to the managed object.
+     * @return True if the object was found and removed.
+     */
     bool removeObject(std::shared_ptr<utils::ManagedObject> obj);
+
+    /**
+     * @brief Removes an object from the processing queue by its ID.
+     * @param id Unique identifier of the object.
+     * @return True if the object was found and removed.
+     */
     bool removeObject(types::ObjID id);
+
+    /**
+     * @brief Atomically moves an object from this processor to another.
+     * @param other Target processor to receive the object.
+     * @param id Unique identifier of the object to move.
+     * @return True if the object was successfully transferred.
+     */
     bool moveObject(std::shared_ptr<Processor> other, types::ObjID id);
+
+    /**
+     * @brief Retrieves the IDs of all objects currently managed by this
+     * processor.
+     * @return Vector of object IDs.
+     */
     std::vector<types::ObjID> getObjectIds() const;
+
+    /**
+     * @brief Updates the readiness state of the processor.
+     * @details Used by the pool during load balancing to prevent new
+     * assignments to a processor slated for removal.
+     * @param isReady True if the processor can accept new objects.
+     */
     void setReady(bool isReady);
+
+    /**
+     * @brief Signals the worker thread to terminate.
+     */
     void stop();
 
+    /**
+     * @brief Checks if the specified object is managed by this processor.
+     * @param obj Shared pointer to the managed object.
+     * @return True if the object is present.
+     */
     bool contains(std::shared_ptr<utils::ManagedObject> obj) const;
+
+    /**
+     * @brief Checks if an object with the specified ID is managed by this
+     * processor.
+     * @param id Unique identifier of the object.
+     * @return True if the object is present.
+     */
     bool contains(types::ObjID id) const;
+
+    /**
+     * @brief Returns the number of objects currently managed.
+     * @return Current object count.
+     */
     size_t getSize() const;
+
+    /**
+     * @brief Checks if the worker thread is active.
+     * @return True if the thread is running.
+     */
     bool isRunning() const;
+
+    /**
+     * @brief Checks if the processor is ready to accept new objects.
+     * @return True if ready.
+     */
     bool isReady() const;
 
 private:
@@ -80,78 +176,170 @@ private:
 
 /**
  * @class ProcessorPool
- * @brief A class that manages a Processors.
- *
- * @details This class is used to create and manage Processors .
- * Processors are used to process expirable objects. There are automatic load
- * managment functions in this class operable by maxLoad and minLoad.
+ * @brief Manages a dynamic pool of Processor worker threads.
+ * @details Distributes ManagedObjects across processors and automatically
+ * scales the number of workers up or down based on configured load thresholds.
  */
 class ProcessorPool {
 public:
     /**
-     * @brief Default Constructor
+     * @brief Default constructor. Creates an empty pool with default
+     * parameters.
      */
     ProcessorPool() = default;
+
     /**
-     * @brief ProcessorPool Constructor
-     *
-     * @param maxProc Maximum number of threads (Processors) to
-     * cefficientlyreate
-     * @param minProc Minimum number of worker threads (Processors)
-     * @param procCapacity Maximum objects per thread
-     * @param maxLoad Maximum percentage of objects to process
-     * @param minLoad Minimum percentage of objects to process
-     * @param sleepInterval The time to check the status of objects
+     * @brief Constructs the pool and initializes the minimum number of
+     * processors.
+     * @param maxProc Maximum number of worker threads.
+     * @param minProc Minimum number of worker threads.
+     * @param procCapacity Maximum objects per thread before scaling up.
+     * @param maxLoad Load percentage threshold to trigger scaling up.
+     * @param minLoad Load percentage threshold to trigger scaling down.
+     * @param sleepInterval Sleep interval passed to worker threads.
      */
     ProcessorPool(size_t maxProc, size_t minProc, size_t procCapacity,
                   types::loadt maxLoad, types::loadt minLoad,
                   types::ms sleepInterval);
+
     /**
-     * @brief Copy Constructor
+     * @brief Move constructor.
      */
     ProcessorPool(ProcessorPool&& other);
+
     /**
-     * @brief Assignment operator
+     * @brief Move assignment operator.
      */
     ProcessorPool& operator=(ProcessorPool&& other);
+
     /**
-     * @brief ProcessorPool destructor
-     *
-     * Stops all processors.
+     * @brief Destructor. Stops and joins all worker threads.
      */
     ~ProcessorPool();
 
+    /**
+     * @brief Registers an object with the pool, assigning it to the least
+     * loaded processor.
+     * @details May trigger the creation of a new processor if load thresholds
+     * are exceeded.
+     * @param obj Shared pointer to the managed object.
+     * @return True if the object was successfully registered.
+     */
     bool registerObject(std::shared_ptr<utils::ManagedObject> obj);
+
+    /**
+     * @brief Removes an object from the pool.
+     * @details May trigger the removal of a processor if load drops below
+     * thresholds.
+     * @param obj Shared pointer to the managed object.
+     * @return True if the object was found and removed.
+     */
     bool removeObject(std::shared_ptr<utils::ManagedObject> obj);
+
+    /**
+     * @brief Removes an object from the pool by its ID.
+     * @param id Unique identifier of the object.
+     * @return True if the object was found and removed.
+     */
     bool removeObject(types::ObjID id);
+
+    /**
+     * @brief Locates the processor managing the specified object.
+     * @param obj Shared pointer to the managed object.
+     * @return Shared pointer to the processor, or nullptr if not found.
+     */
     std::shared_ptr<Processor> getProcessorContains(
         const std::shared_ptr<utils::ManagedObject> obj) const;
+
+    /**
+     * @brief Locates the processor managing the object with the specified ID.
+     * @param id Unique identifier of the object.
+     * @return Shared pointer to the processor, or nullptr if not found.
+     */
     std::shared_ptr<Processor> getProcessorContains(types::ObjID id) const;
+
+    /**
+     * @brief Signals all processors in the pool to stop.
+     */
     void stopAll();
+
+    /**
+     * @brief Returns the total number of objects managed by the pool.
+     * @return Total object count.
+     */
     size_t getObjCount() const;
+
+    /**
+     * @brief Returns the current number of active processors.
+     * @return Active processor count.
+     */
     size_t getProcCount() const;
 
 protected:
-    std::shared_ptr<Processor> getProcessorContains_nolock(types::ObjID id) const;
+    /** @brief Finds the processor containing the object without acquiring the
+     * pool lock. */
+    std::shared_ptr<Processor> getProcessorContains_nolock(
+        types::ObjID id) const;
+
+    /** @brief Evaluates pool load and scales processors up or down if
+     * necessary. */
     bool adjustProcessors_nolock();
+
+    /** @brief Instantiates and adds a new processor to the pool. */
     bool addProcessor_nolock();
+
+    /** @brief Removes the least loaded processor and redistributes its objects.
+     */
     bool removeProcessor_nolock();
-    bool redistributeObjects_nolock(const std::shared_ptr<Processor>& processor);
+
+    /** @brief Migrates all objects from the specified processor to other active
+     * processors. */
+    bool redistributeObjects_nolock(
+        const std::shared_ptr<Processor>& processor);
+
+    /** @brief Retrieves the least loaded processor that is currently ready. */
     std::shared_ptr<Processor> getLeastLoadProc_nolock() const;
+
+    /** @brief Retrieves a processor by its index without lock validation. */
     std::shared_ptr<Processor> getProc_nolock(size_t id) const;
+
+    /** @brief Finds the index of the least loaded ready processor. */
     size_t getLeastLoadProcId_nolock() const;
+
+    /** @brief Returns a copy of the internal processor vector. */
     std::vector<std::shared_ptr<Processor>> getProcessors_nolock() const;
 
 public:
+    /**
+     * @class Builder
+     * @brief Builder pattern implementation for constructing a ProcessorPool.
+     */
     class Builder {
     public:
         Builder() = default;
+
+        /** @brief Sets the minimum number of processors. */
         Builder& setMinimumProcessors(size_t minProc);
+
+        /** @brief Sets the maximum number of processors. */
         Builder& setMaximumProcessors(size_t maxProc);
+
+        /** @brief Sets the maximum object capacity per processor. */
         Builder& setProcessorsCapacity(size_t procCapacity);
+
+        /** @brief Sets the sleep interval for processor threads. */
         Builder& setSleepInterval(types::ms sleepInterval);
+
+        /** @brief Sets the load percentage threshold for scaling up. */
         Builder& setMaximumLoad(types::loadt maxLoad);
+
+        /** @brief Sets the load percentage threshold for scaling down. */
         Builder& setMinimumLoad(types::loadt minLoad);
+
+        /**
+         * @brief Constructs and returns the configured ProcessorPool.
+         * @return Instantiated ProcessorPool.
+         */
         ProcessorPool build();
 
     private:
@@ -180,6 +368,7 @@ private:
     types::loadt m_minLoad = 40;
     /// @brief Sleep time after object processing
     types::ms m_sleepInterval = types::ms(10);
+
     // Internal
 
     /// @brief Processor counter
