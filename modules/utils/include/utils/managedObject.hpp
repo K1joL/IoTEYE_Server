@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <common/types.hpp>
 #include <shared_mutex>
 
@@ -15,6 +16,6 @@ protected:
     mutable std::shared_mutex m_sharedMutex;
 
 private:
-    static size_t m_idSequence;
+    static std::atomic<size_t> m_idSequence;
 };
 }  // namespace ioteye::utils
