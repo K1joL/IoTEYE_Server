@@ -24,18 +24,21 @@ Processor::Processor(Processor&& other) noexcept
 }
 
 Processor& Processor::operator=(Processor&& other) noexcept {
-    if (this != &other) {
-        stop();
-        if (m_thread.joinable())
-            m_thread.join();
-        std::lock_guard<std::shared_mutex> lock(m_mutex);
-        std::lock_guard<std::shared_mutex> otherLock(other.m_mutex);
-        m_objects = std::move(other.m_objects);
-        m_sleepInterval = other.m_sleepInterval;
-        m_running = other.m_running.load();
-        m_isReady = other.m_isReady.load();
-        m_thread = std::move(other.m_thread);
+    if (this == &other) {
+        return *this;
     }
+
+    stop();
+    if (m_thread.joinable())
+        m_thread.join();
+
+    std::scoped_lock lock(m_mutex, other.m_mutex);
+    m_objects = std::move(other.m_objects);
+    m_sleepInterval = other.m_sleepInterval;
+    m_running = other.m_running.load();
+    m_isReady = other.m_isReady.load();
+    m_thread = std::move(other.m_thread);
+
     return *this;
 }
 
