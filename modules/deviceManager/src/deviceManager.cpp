@@ -59,7 +59,10 @@ types::DevicePtr DeviceManager::createDevice(types::DevicePtr newDevice) {
         }
     }
 
-    m_pool->registerObject(newDevice);
+    if (!m_pool->registerObject(newDevice)) {
+        m_devices.erase(id);
+        return nullptr;
+    }
     return newDevice;
 }
 
