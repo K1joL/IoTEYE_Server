@@ -18,6 +18,8 @@ function(add_ioteye_test TEST_SOURCE)
         ioteye::persistence
         ioteye::server
         GTest::gtest_main
+        GTest::gmock
+        GTest::gmock_main
         jwt-cpp::jwt-cpp
         nlohmann_json::nlohmann_json
         Threads::Threads
@@ -31,3 +33,4 @@ endfunction()
 # add_ioteye_test(file_manager_test.cpp)
 # add_ioteye_test(functional_test.cpp)
 # add_ioteye_test(serverResources_test.cpp)
+add_ioteye_test(processorPool/processorPool_generalTest.cpp)
