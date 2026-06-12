@@ -182,10 +182,10 @@ private:
 class ProcessorPool {
 public:
     /**
-     * @brief Default constructor. Creates an empty pool with default
-     * parameters.
+     * @brief Default constructor. Creates pool with default
+     * parameters and initializes the minimum number of processors.
      */
-    ProcessorPool() = default;
+    ProcessorPool();
 
     /**
      * @brief Constructs the pool and initializes the minimum number of

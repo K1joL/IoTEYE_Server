@@ -129,6 +129,11 @@ std::vector<types::ObjID> Processor::getObjectIds() const {
     return ids;
 }
 
+ProcessorPool::ProcessorPool() {
+    for (size_t i = 0; i < m_minProc; ++i)
+        addProcessor_nolock();
+}
+
 ProcessorPool::ProcessorPool(size_t maxProc, size_t minProc, size_t procCapacity, loadt maxLoad,
                              loadt minLoad, ms sleepInterval)
     : m_maxProc(maxProc),
