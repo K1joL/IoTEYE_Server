@@ -47,7 +47,8 @@ namespace ioteye::utils {
  * between processors for load balancing.
  */
 class Processor {
-    using ObjectsMap = std::unordered_map<types::ObjID, std::shared_ptr<utils::ManagedObject>>;
+    using ObjectList = std::vector<std::shared_ptr<utils::ManagedObject>>;
+    using IndexMap = std::unordered_map<types::ObjID, size_t>;
 
 public:
     /**
@@ -164,13 +165,16 @@ public:
 
 private:
     friend class ProcessorPool;
-    ObjectsMap m_objects;
+
+    ObjectList m_objects;
+    IndexMap m_indexMap;
+
     types::ms m_sleepInterval;
     mutable std::shared_mutex m_mutex;
     std::atomic<bool> m_running{true};
     std::atomic<bool> m_isReady{true};
     std::thread m_thread;
-    size_t m_lastIndex{0};
+    size_t m_nextIndex{0};
 };
 
 /**

@@ -17,42 +17,43 @@ Processor::~Processor() {
 
 Processor::Processor(Processor&& other) noexcept
     : m_objects(std::move(other.m_objects)),
+      m_indexMap(std::move(other.m_indexMap)),
       m_sleepInterval(other.m_sleepInterval),
-      m_running(other.m_running.load()),
-      m_isReady(other.m_isReady.load()),
-      m_thread(std::move(other.m_thread)) {
+      m_running(other.m_running.load(std::memory_order_relaxed)),
+      m_isReady(other.m_isReady.load(std::memory_order_relaxed)),
+      m_thread(std::move(other.m_thread)),
+      m_nextIndex(other.m_nextIndex) {
 }
 
 Processor& Processor::operator=(Processor&& other) noexcept {
-    if (this == &other) {
-        return *this;
+    if (this != &other) {
+        stop();
+        if (m_thread.joinable())
+            m_thread.join();
+
+        std::scoped_lock lock(m_mutex, other.m_mutex);
+
+        m_objects = std::move(other.m_objects);
+        m_indexMap = std::move(other.m_indexMap);
+        m_sleepInterval = other.m_sleepInterval;
+        m_running.store(other.m_running.load(std::memory_order_relaxed), std::memory_order_relaxed);
+        m_isReady.store(other.m_isReady.load(std::memory_order_relaxed), std::memory_order_relaxed);
+        m_thread = std::move(other.m_thread);
+        m_nextIndex = other.m_nextIndex;
     }
-
-    stop();
-    if (m_thread.joinable())
-        m_thread.join();
-
-    std::scoped_lock lock(m_mutex, other.m_mutex);
-    m_objects = std::move(other.m_objects);
-    m_sleepInterval = other.m_sleepInterval;
-    m_running = other.m_running.load();
-    m_isReady = other.m_isReady.load();
-    m_thread = std::move(other.m_thread);
-
     return *this;
 }
 
 void Processor::run() {
-    while (m_running) {
+    while (m_running.load(std::memory_order_relaxed)) {
         std::shared_ptr<ManagedObject> currentObj;
         {
             std::shared_lock lock(m_mutex);
             if (!m_objects.empty()) {
-                size_t index = m_lastIndex % m_objects.size();
-                auto it = m_objects.begin();
-                std::advance(it, index);
-                currentObj = it->second;
-                m_lastIndex++;
+                if (m_nextIndex >= m_objects.size()) {
+                    m_nextIndex = 0;
+                }
+                currentObj = m_objects[m_nextIndex++];
             }
         }
 
@@ -64,27 +65,71 @@ void Processor::run() {
 }
 
 bool Processor::addObject(std::shared_ptr<ManagedObject> obj) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
-    return m_objects.emplace(obj->getObjID(), obj).second;
+    std::unique_lock lock(m_mutex);
+    auto id = obj->getObjID();
+
+    if (m_indexMap.contains(id)) {
+        return false;
+    }
+
+    m_indexMap[id] = m_objects.size();
+    m_objects.push_back(std::move(obj));
+    return true;
 }
 
 bool Processor::removeObject(std::shared_ptr<ManagedObject> obj) {
-    return removeObject(obj->getObjID());
+    return obj ? removeObject(obj->getObjID()) : false;
 }
 
-bool Processor::removeObject(ObjID id) {
-    std::unique_lock<std::shared_mutex> lock(m_mutex);
-    return m_objects.erase(id);
+bool Processor::removeObject(types::ObjID id) {
+    std::unique_lock lock(m_mutex);
+    auto it = m_indexMap.find(id);
+    if (it == m_indexMap.end()) {
+        return false;
+    }
+
+    size_t idx = it->second;
+    size_t last_idx = m_objects.size() - 1;
+
+    if (idx != last_idx) {
+        auto last_id = m_objects[last_idx]->getObjID();
+        m_objects[idx] = std::move(m_objects[last_idx]);
+        m_indexMap[last_id] = idx;
+    }
+
+    m_objects.pop_back();
+    m_indexMap.erase(it);
+    return true;
 }
 
-bool Processor::moveObject(std::shared_ptr<Processor> other, ObjID id) {
-    std::unique_lock<std::shared_mutex> sourceLock(m_mutex, std::defer_lock);
-    std::unique_lock<std::shared_mutex> otherLock(other->m_mutex, std::defer_lock);
-    std::lock(sourceLock, otherLock);
-    auto node = m_objects.extract(id);
-    if (node)
-        return other->m_objects.insert(std::move(node)).inserted;
-    return false;
+bool Processor::moveObject(std::shared_ptr<Processor> other, types::ObjID id) {
+    std::unique_lock sourceLock(m_mutex, std::defer_lock);
+    std::unique_lock otherLock(other->m_mutex, std::defer_lock);
+    std::scoped_lock lock(sourceLock, otherLock);
+
+    auto it = m_indexMap.find(id);
+    if (it == m_indexMap.end() || other->m_indexMap.contains(id)) {
+        return false;
+    }
+
+    auto obj = std::move(m_objects[it->second]);
+
+    size_t idx = it->second;
+    size_t last_idx = m_objects.size() - 1;
+
+    if (idx != last_idx) {
+        auto last_id = m_objects[last_idx]->getObjID();
+        m_objects[idx] = std::move(m_objects[last_idx]);
+        m_indexMap[last_id] = idx;
+    }
+
+    m_objects.pop_back();
+    m_indexMap.erase(it);
+
+    other->m_indexMap[id] = other->m_objects.size();
+    other->m_objects.push_back(std::move(obj));
+
+    return true;
 }
 
 size_t Processor::getSize() const {
@@ -93,40 +138,39 @@ size_t Processor::getSize() const {
 }
 
 bool Processor::contains(std::shared_ptr<ManagedObject> obj) const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
-    return m_objects.contains(obj->getObjID());
+    return obj ? contains(obj->getObjID()) : false;
 }
 
-bool Processor::contains(ObjID id) const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
-    return m_objects.contains(id);
+bool Processor::contains(types::ObjID id) const {
+    std::shared_lock lock(m_mutex);
+    return m_indexMap.contains(id);
+}
+
+std::vector<types::ObjID> Processor::getObjectIds() const {
+    std::shared_lock lock(m_mutex);
+    std::vector<types::ObjID> ids;
+    ids.reserve(m_objects.size());
+    for (const auto& ptr : m_objects) {
+        ids.push_back(ptr->getObjID());
+    }
+    return ids;
 }
 
 void Processor::setReady(bool isReady) {
-    m_isReady.store(isReady);
+    m_isReady.store(isReady, std::memory_order_relaxed);
 }
 
 void Processor::stop() {
-    m_running.store(false);
+    m_running.store(false, std::memory_order_relaxed);
     setReady(false);
 }
 
 bool Processor::isRunning() const {
-    return m_running.load();
+    return m_running.load(std::memory_order_relaxed);
 }
 
 bool Processor::isReady() const {
-    return m_isReady.load();
-}
-
-std::vector<types::ObjID> Processor::getObjectIds() const {
-    std::shared_lock<std::shared_mutex> lock(m_mutex);
-    std::vector<types::ObjID> ids;
-    ids.reserve(m_objects.size());
-    for (const auto& [id, ptr] : m_objects) {
-        ids.push_back(id);
-    }
-    return ids;
+    return m_isReady.load(std::memory_order_relaxed);
 }
 
 ProcessorPool::ProcessorPool() {
